@@ -297,9 +297,9 @@ const MINE_SRC=[[69,1],[71,1],[72,1],[74,1],[76,1],[72,1],[76,2],[75,1],[71,1],[
 /* Park: an original, bright tune in C major. */
 const PARK_SRC=[[72,2],[76,2],[79,2],[76,1],[74,1],[72,2],[74,1],[76,1],[77,2],[76,2],[74,2],[77,2],[81,2],[79,1],[77,1],[76,2],[74,2],[72,4]];
 const TUNES={
-  circus:{mel:MEL,len:64,bass:BASS,lead:'square',lv:.045,bpm:()=>150+Math.max(0,S.speed-340)*.09},
+  circus:{mel:MEL,len:64,bass:BASS,lead:'square',lv:.045,bpm:()=>150+Math.max(0,S.speed-340)*.09+(S&&S.dash>0?40:0)},
   mine:{mel:melIndex(MINE_SRC),len:32,bass:[[45,52],[47,54],[46,53],[43,50]],lead:'square',lv:.04,bpm:()=>118+Math.max(0,S.speed-340)*.22+(S&&S.dash>0?46:0)},
-  park:{mel:melIndex(PARK_SRC),len:32,bass:[[48,55],[41,48],[50,57],[43,50]],lead:'triangle',lv:.075,bpm:()=>140}};
+  park:{mel:melIndex(PARK_SRC),len:32,bass:[[48,55],[41,48],[50,57],[43,50]],lead:'triangle',lv:.075,bpm:()=>140+(S&&S.dash>0?36:0)}};
 let musicOn=load('konik.music',true);
 const M={track:'circus',echo:null,playing:false,next:0,step:0,timer:null,bus:null,lp:null,hat:null};
 const mtof=n=>440*Math.pow(2,(n-69)/12);
@@ -408,7 +408,7 @@ function banner(text,dur=1.6){S.banner={text,t:0,dur}}
 /* ---------- spawning (stage) ---------- */
 function pick(pool){const tot=pool.reduce((a,b)=>a+b[1],0);let r=Math.random()*tot;for(const[k,w]of pool){if((r-=w)<=0)return k}return pool[0][0]}
 function addItem(o){if(SKEY()==='mine')o.type=({ring:'silver',carrot:'gold',melon:'gold'})[o.type]||o.type;S.items.push(o)}
-function ringArc(x0,n,h){const top=Math.floor(n/2),carrot=Math.random()<.22;for(let i=0;i<n;i++)addItem({type:carrot&&i===top?'carrot':'ring',x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}
+function ringArc(x0,n,h){x0-=42;n+=2;const top=Math.floor(n/2),carrot=Math.random()<.22;for(let i=0;i<n;i++)addItem({type:carrot&&i===top?'carrot':'ring',x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}
 const EN={
   lion:{role:'avoid',w:92,h:64,vx:40,hb:[10,82,-60],ph:9,name:'사자',tip:'사자는 꼭 넘어가요!'},
   wolf:{role:'stomp',w:96,h:50,vx:150,hb:[8,88,-50],ph:18,name:'늑대',tip:'늑대는 밟으면 +100'},
@@ -421,25 +421,19 @@ const EN={
   hevil:{role:'avoid',w:130,h:150,vx:25,hb:[20,112,-136],ph:6,name:'HEVIL',tip:'HEVIL은 꼭 뛰어넘어요!'},
   snake:{role:'bad',w:74,h:28,vx:30,hb:[4,70,-24],ph:6,name:'뱀',tip:'뱀은 밟지 마세요!'}};
 function spawnEnemy(type,x){const e=EN[type];S.obs.push({type,enemy:1,role:e.role,x,w:e.w,h:e.h,vx:e.vx,ph:Math.random()*6,hb:e.hb})}
-function coinArc(x0,n,h,kind){for(let i=0;i<n;i++){const t=kind==='mix'?(i===Math.floor(n/2)?'gold':'silver'):kind;S.items.push({type:t,x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}}
+function coinArc(x0,n,h,kind){x0-=42;n+=2;for(let i=0;i<n;i++){const t=kind==='mix'?(i===Math.floor(n/2)?'gold':'silver'):kind;S.items.push({type:t,x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}}
 function spawnMine(){
   const x=W+50;
-  if(S.dash>0){switch(pick([['coins',45],['miner',15],['mole',15],['rock',12],['mushroom',10],['cart',8]])){
-      case'coins':{const y=rand(60,200);for(let i=0;i<8;i++)S.items.push({type:i%3===1?'gold':'silver',x:x+i*40,y:GROUND-y-Math.sin(i*.8)*30});break}
-      case'rock':S.obs.push({type:'rock',block:1,x,w:62,h:44});break;
-      case'cart':S.obs.push({type:'cart',block:1,x,w:86,h:56,vx:0});break;
-      default:spawnEnemy(pick([['miner',1],['mole',1],['mushroom',1]]),x)}
-    S.nextSpawn=rand(300,460);return}
   const pool=[['rock',22],['boulder',13],['cart',12],['miner',14],['mole',15],['mushroom',12],['coins',14]];
   if(S.star<=0)pool.push(['star',6]);
   if(S.dist-S.lastCandy>2600)pool.push(['candy',4]);
-  if(!S.seen.whaleItem&&S.dist<STAGES[2].start-16000)pool.push(['whale',6]);
+  if(whaleOK())pool.push(['whale',6]);
   let kind=pick(pool);
-  if(!S.seen.whaleItem&&S.dist>STAGES[1].start+2500&&S.dist<STAGES[2].start-16000)kind='whale';
+  if(whaleOK()&&S.dist>STAGES[1].start+2500)kind='whale';
   switch(kind){
     case'star':S.items.push({type:'star',x,y:GROUND-160});coinArc(x-110,3,70,'silver');break;
     case'candy':S.lastCandy=S.dist;S.items.push({type:'candy',x:x+40,y:GROUND-170});coinArc(x-90,3,70,'silver');break;
-    case'whale':S.seen.whaleItem=1;S.items.push({type:'whale',x:x+40,y:GROUND-150});coinArc(x-100,3,80,'gold');break;
+    case'whale':spawnWhale(x);break;
     case'rock':S.obs.push({type:'rock',block:1,x,w:62,h:44});coinArc(x-56,4,95,'silver');break;
     case'boulder':S.obs.push({type:'boulder',block:1,x,w:76,h:100});coinArc(x-66,4,150,'mix');break;
     case'cart':S.obs.push({type:'cart',block:1,x:x+80,w:86,h:56,vx:150});coinArc(x+40,5,130,'silver');break;
@@ -456,8 +450,10 @@ function spawnPark(){
   if(S.hearts<3)pool.push(['heart',3]);
   if(!S.board&&S.dist-S.lastBoard>2500)pool.push(['board',8]);
   if(S.dist-S.lastCandy>2600)pool.push(['candy',4]);
+  if(whaleOK())pool.push(['whale',4]);
   let kind=pick(pool),extra=0;
   if(!S.seen.boardItem&&S.dist>STAGES[2].start+1200)kind='board';
+  else if(whaleOK()&&S.dist>STAGES[2].start+4000)kind='whale';
   switch(kind){
     case'hedge':S.obs.push({type:'hedge',block:1,x,w:76,h:48});ringArc(x-56,4,96);break;
     case'log':S.obs.push({type:'log',block:1,x,w:88,h:36});ringArc(x-50,4,80);break;
@@ -473,6 +469,7 @@ function spawnPark(){
     case'heart':S.items.push({type:'heart',x,y:GROUND-140});break;
     case'board':S.seen.boardItem=1;S.lastBoard=S.dist;S.items.push({type:'board',x:x+30,y:GROUND-120});ringArc(x-100,3,60);break;
     case'candy':S.lastCandy=S.dist;S.items.push({type:'candy',x:x+40,y:GROUND-170});ringArc(x-90,3,70);break;
+    case'whale':spawnWhale(x);break;
   }
   S.nextSpawn=rand(380,620)*(.85+S.speed/1600)+extra;
 }
@@ -493,12 +490,29 @@ function spawnSpace(){
   S.nextSpawn=rand(250,360);
 }
 function startSpace(){
+  if(S.items.some(it=>it.type==='whale'))S.seen['whale'+S.stage]=0;S.items=S.items.filter(it=>it.type!=='whale');
   S.space=12;S.warp=1;S.hevilT=2.4;S.bossQ=[9.6,5.8].concat(Math.random()<.5?[2.6]:[]);sfx('warp');musicSetTrack('hevil');
   const px=S.p.x;S.obs=S.obs.filter(o=>o.x<px-40);S.pits=S.pits.filter(q=>q.x<px+120);S.nextSpawn=220;
 }
 function endSpace(){S.warp=1;S.obs=S.obs.filter(o=>!(o.type==='hevil'||o.type==='paint')||o.x<S.p.x-40);sfx('unwarp');banner(`다시 ${STAGES[S.stage].name}로!`,1.3);musicSetTrack(SKEY());S.nextSpawn=520}
 const mul=()=>S.space>0?2:1;
+function spawnDash(){const x=W+50,k=SKEY();
+  if(Math.random()<.55){const y=rand(60,200);for(let i=0;i<8;i++)addItem({type:i%4===1?(Math.random()<.5?'carrot':'melon'):'ring',x:x+i*40,y:GROUND-y-Math.sin(i*.8)*30})}
+  else{const E=k==='mine'?['miner','mole','mushroom']:k==='park'?['tiger','boar','snake']:['lion','wolf','snail'];
+    if(Math.random()<.3){const t=k==='mine'?'rock':k==='park'?'hedge':'drum';S.obs.push({type:t,block:1,x,w:62,h:46})}else spawnEnemy(E[Math.floor(Math.random()*3)],x)}
+  S.nextSpawn=rand(300,460)}
+/* After every regular pattern: 30% shorter gap, and the gap is filled with a trail to collect. */
+function spawnTick(){const ni=S.items.length,no=S.obs.length,np=S.pits.length;spawnRun();
+  if(S.space>0||S.dash>0)return;
+  S.nextSpawn*=.77;
+  let start=W+110;for(const it of S.items.slice(ni))start=Math.max(start,it.x+44);
+  for(const o of S.obs.slice(no))start=Math.max(start,o.x+(o.w||(o.r||20)*2)+40+(o.vx>60?80:0));
+  for(const q of S.pits.slice(np))start=Math.max(start,q.x+q.w+40);
+  const end=W+50+S.nextSpawn-70,wave=Math.random()<.35;
+  for(let x=start,i=0;x<=end;x+=44,i++)addItem({type:i%5===4?'carrot':'ring',x,y:GROUND-40-(wave?Math.abs(Math.sin(i*.5))*70:0)});
+}
 function spawnRun(){
+  if(S.dash>0){spawnDash();return}
   if(S.space>0){spawnSpace();return}
   if(SKEY()==='mine'){spawnMine();return}
   if(SKEY()==='park'){spawnPark();return}
@@ -509,11 +523,14 @@ function spawnRun(){
   if(S.star<=0&&S.dist>700)pool.push(['star',9]);
   if(S.hearts<3)pool.push(['heart',3]);
   if(S.dist>1800&&S.dist-S.lastCandy>2600)pool.push(['candy',5]);
+  if(whaleOK()&&S.dist>2500)pool.push(['whale',5]);
   let extra=0,kind=pick(pool);
   if(!S.seen.starItem&&S.dist>900&&S.star<=0)kind='star';
   if(!S.lastCandy&&S.dist>2200)kind='candy';
+  else if(whaleOK()&&S.dist>3500)kind='whale';
   switch(kind){
     case'candy':S.lastCandy=S.dist;S.items.push({type:'candy',x:x+40,y:GROUND-170});ringArc(x-90,3,70);break;
+    case'whale':spawnWhale(x);break;
     case'drum':S.obs.push({type:'drum',block:1,x,w:56,h:46});ringArc(x-56,4,92);break;
     case'tower':S.obs.push({type:'tower',block:1,x,w:50,h:104});ringArc(x-60,4,150);break;
     case'ball':S.obs.push({type:'ball',x:x+30,r:24,rot:0,vx:120});break;
@@ -630,12 +647,12 @@ function updateRun(dt,presses,releases){
   for(const q of S.pits)q.x-=sp*dt;
   S.obs=S.obs.filter(o=>o.x>-160&&!o.gone);S.items=S.items.filter(i=>i.x>-60&&!i.dead);S.pits=S.pits.filter(q=>q.x+q.w>-40);
   {const want=stageAt(S.dist);if(want!==S.stage&&S.space<=0&&S.dash<=0)beginStage(want)}
-  S.nextSpawn-=sp*dt;if(S.nextSpawn<=0&&S.dist>300)spawnRun();
+  S.nextSpawn-=sp*dt;if(S.nextSpawn<=0&&S.dist>300)spawnTick();
   // collisions
   const hb=horseBox();
   for(const o of S.obs){
     if(o.dead){o.dy=(o.dy||0)+dt;continue}
-    if(S.dash>0){if(o.type!=='splat'&&o.x<p.x+190&&o.x+(o.w||30)>p.x-90){if(o.type==='paint'){o.dead=o.gone=true}else{smash(o);if(o.enemy)floatText(`${EN[o.type].name} 퇴치!`,o.x+(o.w||0)/2,GROUND-(o.h||40)-30,'#ffe27a')}}continue}
+    if(S.dash>0){if(o.type!=='splat'&&o.x<p.x+190&&o.x+(o.w||30)>p.x-90){if(o.type==='paint'){o.dead=o.gone=true}else{smash(o);if(o.type==='fire')o.gone=true;if(o.enemy)floatText(`${EN[o.type].name} 퇴치!`,o.x+(o.w||0)/2,GROUND-(o.h||40)-30,'#ffe27a')}}continue}
     if(o.block){if(boxHit(hb,{x1:o.x+4,x2:o.x+o.w-4,y1:GROUND-o.h+6,y2:GROUND}))hurt(o)}
     else if(o.type==='ball'){if(circBox(o.x,GROUND-o.r,o.r-3,hb))hurt(o)}
     else if(o.type==='paint'){if(circBox(o.x,o.y,o.r-2,hb)){o.dead=true;o.gone=true;burst(o.x,o.y,16,['#ff4fa3','#ff8fc8','#ffffff'],260);if(S.star<=0&&S.inv<=0)floatText('물감 공격!',S.p.x+50,S.p.y-110,'#ff8fc8');hurt(o)}}
@@ -665,11 +682,14 @@ function updateRun(dt,presses,releases){
 }
 function dropBoard(){const p=S.p;S.board=false;S.inv=1.3;S.shake=.25;S.combo=0;sfx('clack');
   S.parts.push({type:'board',x:p.x+40,y:p.y-6,vx:-240,vy:-520,life:1.1,max:1.1,r:0,vr:-11,s:1,c:''});floatText('보드가 대신 막아줬어요!',p.x+50,p.y-110,'#ffe27a')}
+const DASHLEN=[9000,13000,13000];
+function whaleOK(){const nx=STAGES[S.stage+1];return !S.seen['whale'+S.stage]&&(!nx||S.dist+DASHLEN[S.stage]+3000<nx.start)}
+function spawnWhale(x){S.seen['whale'+S.stage]=1;S.items.push({type:'whale',x:x+40,y:GROUND-150});ringArc(x-100,3,80)}
 function startDash(){
-  S.dash=13000;S.inv=Math.max(S.inv,.5);sfx('whale');banner('구씨 고래 등장!',1.9);floatText('고래 타고 질주!',S.p.x+60,S.p.y-120,'#bfe8ff');
+  S.dash=S.dashMax=DASHLEN[S.stage];S.inv=Math.max(S.inv,.5);sfx('whale');banner('구씨 고래 등장!',1.9);floatText('고래 타고 질주!',S.p.x+60,S.p.y-120,'#bfe8ff');
   S.items=S.items.filter(it=>it.type!=='candy');S.p.vy=0;S.p.onGround=false;burst(S.p.x+40,S.p.y-20,24,['#bfe8ff','#ffffff','#3d6fd1'],320,'bubble');
 }
-function endDash(){const p=S.p;S.dash=0;S.flyWhale={x:p.x+30,y:p.y+26,vx:160,vy:-260,rot:0};p.vy=-420;p.onGround=false;p.jumps=1;S.inv=1.6;
+function endDash(){const p=S.p;S.dash=0;S.pits=S.pits.filter(q=>q.x>p.x+220||q.x+q.w<p.x-20);S.flyWhale={x:p.x+30,y:p.y+26,vx:160,vy:-260,rot:0};p.vy=-420;p.onGround=false;p.jumps=1;S.inv=1.6;
   sfx('unwarp');floatText('고마워, 구씨 고래!',p.x+90,p.y-110,'#bfe8ff');burst(p.x+60,p.y,20,['#bfe8ff','#ffffff'],260,'star');S.nextSpawn=500}
 function plainSplash(q){
   const p=S.p;if(q)q.used=true;sfx('splash');burst(p.x+40,GROUND+30,18,['#bff0fa','#ffffff','#62d2e8'],280);
@@ -1161,7 +1181,7 @@ function drawHUD(){
   for(const[k,v]of list){icons[k](x+10);outlined(String(v),x+28,top+1,24);x+=84}
   outlined(score().toLocaleString('ko-KR'),W-24,top+1,32,'right');
   if(S.space>0&&S.mode==='run'){ctx.fillStyle='rgba(43,18,46,.5)';ctx.fillRect(W/2-110,top+30,220,10);ctx.fillStyle='#ff4fa3';ctx.fillRect(W/2-110,top+30,220*S.space/12,10);outlined('HEVIL 스테이지 · 점수 2배',W/2,top+56,18,'center','#ffd1e8')}
-  if(S.dash>0){ctx.fillStyle='rgba(20,30,60,.5)';ctx.fillRect(W/2-110,top+30,220,10);ctx.fillStyle='#8fd0ff';ctx.fillRect(W/2-110,top+30,220*S.dash/13000,10);outlined('구씨 고래 질주!',W/2,top+56,18,'center','#d6eaff')}
+  if(S.dash>0){ctx.fillStyle='rgba(20,30,60,.5)';ctx.fillRect(W/2-110,top+30,220,10);ctx.fillStyle='#8fd0ff';ctx.fillRect(W/2-110,top+30,220*S.dash/S.dashMax,10);outlined('구씨 고래 질주!',W/2,top+56,18,'center','#d6eaff')}
   if(S.star>0){ctx.fillStyle='rgba(43,18,46,.45)';ctx.fillRect(20,top+22,140,8);ctx.fillStyle=`hsl(${S.t*400%360},90%,62%)`;ctx.fillRect(20,top+22,140*S.star/6,8)}
   if(S.mode==='swim'){const left=Math.max(0,15.5-S.w.t);ctx.fillStyle='rgba(43,18,46,.35)';ctx.fillRect(W/2-90,top+30,180,10);ctx.fillStyle='#bff0fa';ctx.fillRect(W/2-90,top+30,180*left/15.5,10);outlined('부캉이와 헤엄 중',W/2,top+56,18,'center')}
   if(S.combo>1&&S.mode==='run')outlined(`콤보 ×${S.combo}`,W-24,top+34,20,'right','#ffe27a');
