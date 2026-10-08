@@ -135,6 +135,7 @@ body.playing .fbtn{display:block;position:absolute;right:calc(env(safe-area-inse
     <span><b>탄광</b>은화 20 · 금화 50 · 구씨 고래를 먹으면 고래 타고 질주</span>
     <span><b>스케이트보드</b>공원에서 등장, 한 번 막아주는 라이프</span>
     <span><b>먹이</b>링 10 · 당근 30 · 치킨 45 · 수박 60</span>
+    <span><b>왕동전</b>HEVIL 스테이지에서만 · 은색 200 · 금색 1,000</span>
     <span><b>물웅덩이</b>부캉이가 얼굴을 내민 물만 바다로 · 그냥 물은 하트 −1</span>
     <span><b>바닷속</b>물고기 +25 · 가시 복어 −40</span>
     <span><b>HEVIL 곰</b>12초 동안 HEVIL 스테이지, 점수 2배</span>
@@ -380,7 +381,7 @@ pauseBtn.addEventListener('click',()=>{if(phase==='play')pause();else if(phase==
 /* ---------- overlay ---------- */
 function showTitle(){card.innerHTML=`<p class="eyebrow">HUHU · KONIK ADVENTURE</p><h2>코닉의 모험</h2><p>서커스 공연장에서 출발해 황금 탄광을 지나 잔디밭 공원까지 달려요</p><button class="go" id="go" type="button">모험 시작</button><p class="hint">${touchMode?'화면을 탭하면 점프 · 시작하면 휴대폰을 가로로 돌려서 플레이하세요':'스페이스 · ↑ · 화면 탭으로 점프'}</p>`;ovl.hidden=false;document.getElementById('go').onclick=start}
 let overT=0;
-function showOver(){const s=score();card.innerHTML=`<p class="eyebrow">${STAGES[S.stage].name} · ${meters().toLocaleString('ko-KR')}m</p><h2>모험 끝!</h2><p class="big">${s.toLocaleString('ko-KR')}점</p><p class="sub">${S.gold||S.silver?`금화 ${S.gold} · 은화 ${S.silver} · `:''}링 ${S.rings} · 당근 ${S.carrots} · 치킨 ${S.chicken} · 수박 ${S.melons} · 물고기 ${S.fish} · 진주 ${S.pearls} · 최고 기록 ${best.toLocaleString('ko-KR')}점</p><div class="row"><button class="go" id="go" type="button">다시 하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=start;bindQuit()}
+function showOver(){const s=score();card.innerHTML=`<p class="eyebrow">${STAGES[S.stage].name} · ${meters().toLocaleString('ko-KR')}m</p><h2>모험 끝!</h2><p class="big">${s.toLocaleString('ko-KR')}점</p><p class="sub">${S.gold||S.silver?`금화 ${S.gold} · 은화 ${S.silver} · `:''}${S.kingG||S.kingS?`왕동전 ${S.kingG+S.kingS} · `:''}링 ${S.rings} · 당근 ${S.carrots} · 치킨 ${S.chicken} · 수박 ${S.melons} · 물고기 ${S.fish} · 진주 ${S.pearls} · 최고 기록 ${best.toLocaleString('ko-KR')}점</p><div class="row"><button class="go" id="go" type="button">다시 하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=start;bindQuit()}
 function showPause(){card.innerHTML=`<h2>잠시 쉬는 중</h2><div class="row"><button class="go" id="go" type="button">계속하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=resume;bindQuit()}
 function bindQuit(){const q=document.getElementById('quit');if(q)q.onclick=quit}
 /* phone: full-screen landscape play */
@@ -409,7 +410,7 @@ function banner(text,dur=1.6){S.banner={text,t:0,dur}}
 /* ---------- spawning (stage) ---------- */
 function pick(pool){const tot=pool.reduce((a,b)=>a+b[1],0);let r=Math.random()*tot;for(const[k,w]of pool){if((r-=w)<=0)return k}return pool[0][0]}
 function addItem(o){if(SKEY()==='mine')o.type=({ring:'silver',carrot:'gold',chicken:'gold',melon:'gold'})[o.type]||o.type;S.items.push(o)}
-function ringArc(x0,n,h){const add=S.space>0?2:1;x0-=21*add;n+=add;const top=Math.floor(n/2),carrot=Math.random()<.22,snack=S.space>0||Math.random()<.6?'carrot':'chicken';for(let i=0;i<n;i++)addItem({type:carrot&&i===top?snack:'ring',x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}
+function ringArc(x0,n,h){const add=S.space>0?2:0;x0-=21*add;n+=add;const top=Math.floor(n/2),carrot=Math.random()<.22,snack=S.space>0||Math.random()<.6?'carrot':'chicken';for(let i=0;i<n;i++)addItem({type:carrot&&i===top?snack:'ring',x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}
 const EN={
   lion:{role:'avoid',w:92,h:64,vx:40,hb:[10,82,-60],ph:9,name:'사자',tip:'사자는 꼭 넘어가요!'},
   wolf:{role:'stomp',w:96,h:50,vx:150,hb:[8,88,-50],ph:18,name:'늑대',tip:'늑대는 밟으면 +100'},
@@ -422,7 +423,7 @@ const EN={
   hevil:{role:'avoid',w:130,h:150,vx:25,hb:[20,112,-136],ph:6,name:'HEVIL',tip:'HEVIL은 꼭 뛰어넘어요!'},
   snake:{role:'bad',w:74,h:28,vx:30,hb:[4,70,-24],ph:6,name:'뱀',tip:'뱀은 밟지 마세요!'}};
 function spawnEnemy(type,x){const e=EN[type];S.obs.push({type,enemy:1,role:e.role,x,w:e.w,h:e.h,vx:e.vx,ph:Math.random()*6,hb:e.hb})}
-function coinArc(x0,n,h,kind){x0-=21;n+=1;for(let i=0;i<n;i++){const t=kind==='mix'?(i===Math.floor(n/2)?'gold':'silver'):kind;S.items.push({type:t,x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}}
+function coinArc(x0,n,h,kind){for(let i=0;i<n;i++){const t=kind==='mix'?(i===Math.floor(n/2)?'gold':'silver'):kind;S.items.push({type:t,x:x0+i*42,y:GROUND-48-Math.sin((i+.5)/n*Math.PI)*h})}}
 function spawnMine(){
   const x=W+50;
   const pool=[['rock',22],['boulder',13],['cart',12],['miner',14],['mole',15],['mushroom',12],['coins',14]];
@@ -441,7 +442,7 @@ function spawnMine(){
     case'miner':spawnEnemy('miner',x);coinArc(x-70,5,150,'gold');break;
     case'mole':spawnEnemy('mole',x+80);break;
     case'mushroom':spawnEnemy('mushroom',x);for(let i=0;i<4;i++)S.items.push({type:'silver',x:x+110+i*40,y:GROUND-40});break;
-    case'coins':{const y=rand(110,190);for(let i=0;i<5;i++)S.items.push({type:i%3===1?'gold':'silver',x:x+i*42,y:GROUND-y-Math.sin(i*.8)*24});break}
+    case'coins':{const y=rand(110,190);for(let i=0;i<4;i++)S.items.push({type:i%3===1?'gold':'silver',x:x+i*42,y:GROUND-y-Math.sin(i*.8)*24});break}
   }
   S.nextSpawn=rand(380,600)*(.85+S.speed/1600);
 }
@@ -489,6 +490,7 @@ function spawnSpace(){
     case'melons':for(let i=0;i<3;i++)addItem({type:'melon',x:x+i*90,y:GROUND-170-Math.sin(i/2*Math.PI)*90});break;
     case'constellation':{const cx=x+90,cy=GROUND-215;for(let i=0;i<14;i++){const a=i/14*Math.PI*2,hx=16*Math.pow(Math.sin(a),3),hy=13*Math.cos(a)-5*Math.cos(2*a)-2*Math.cos(3*a)-Math.cos(4*a);addItem({type:'ring',x:cx+hx*4.6,y:cy-hy*4.6})}addItem({type:'melon',x:cx,y:cy+4});break}
   }
+  if(Math.random()<.6){const last=S.items[S.items.length-1];if(last)S.items.push({type:Math.random()<.3?'kingG':'kingS',x:last.x+62,y:Math.min(last.y,GROUND-60)})}
   S.nextSpawn=rand(250,360);
 }
 function startSpace(){
@@ -499,7 +501,7 @@ function startSpace(){
 function endSpace(){S.warp=1;S.obs=S.obs.filter(o=>!(o.type==='hevil'||o.type==='paint')||o.x<S.p.x-40);sfx('unwarp');banner(`다시 ${STAGES[S.stage].name}로!`,1.3);musicSetTrack(SKEY());S.nextSpawn=520}
 const mul=()=>S.space>0?2:1;
 function spawnDash(){const x=W+50,k=SKEY();
-  if(Math.random()<.55){const y=rand(60,200);for(let i=0;i<6;i++)addItem({type:i%4===1?pick([['carrot',1],['chicken',1],['melon',1]]):'ring',x:x+i*40,y:GROUND-y-Math.sin(i*.8)*30})}
+  if(Math.random()<.55){const y=rand(60,200);for(let i=0;i<5;i++)addItem({type:i%4===1?pick([['carrot',1],['chicken',1],['melon',1]]):'ring',x:x+i*40,y:GROUND-y-Math.sin(i*.8)*30})}
   else{const E=k==='mine'?['miner','mole','mushroom']:k==='park'?['tiger','boar','snake']:['lion','wolf','snail'];
     if(Math.random()<.3){const t=k==='mine'?'rock':k==='park'?'hedge':'drum';S.obs.push({type:t,block:1,x,w:62,h:46})}else spawnEnemy(E[Math.floor(Math.random()*3)],x)}
   S.nextSpawn=rand(300,460)}
@@ -511,8 +513,8 @@ function spawnTick(){const ni=S.items.length,no=S.obs.length,np=S.pits.length;sp
   for(const o of S.obs.slice(no))start=Math.max(start,o.x+(o.w||(o.r||20)*2)+40+(o.vx>60?80:0));
   for(const q of S.pits.slice(np))start=Math.max(start,q.x+q.w+40);
   const end=W+50+S.nextSpawn-70,wave=Math.random()<.35;
-  if(Math.random()<.7){let lastX=-1,lastY=0;
-    for(let x=start,i=0;x<=end;x+=56,i++){const y=GROUND-40-(wave?Math.abs(Math.sin(i*.5))*70:0);addItem({type:i%5===4?(Math.random()<.5?'chicken':'carrot'):'ring',x,y});lastX=x;lastY=y}}
+  if(Math.random()<.6){let lastX=-1,lastY=0;
+    for(let x=start,i=0;x<=end;x+=60,i++){const y=GROUND-40-(wave?Math.abs(Math.sin(i*.5))*70:0);addItem({type:i%5===4?(Math.random()<.5?'chicken':'carrot'):'ring',x,y});lastX=x;lastY=y}}
 }
 function spawnRun(){
   if(S.dash>0){spawnDash();return}
@@ -587,7 +589,7 @@ function collect(it){
   if(it.type==='candy'){startSpace();burst(it.x,it.y,26,['#ef5b8f','#7b6cf6','#2bb3ad','#f2c14e','#fff4e6'],320,'star')}
   else if(it.type==='ring'){S.rings++;S.bonus+=10*mul();sfx('ring');burst(it.x,it.y,6,['#f2c14e','#fff2b0'],120)}
   else if(it.type==='chicken'){S.chicken++;S.bonus+=45*mul();sfx('crunch');floatText('+'+45*mul(),it.x,it.y-22,'#ffc27a');burst(it.x,it.y,8,['#c8742c','#fff4e6'],140)}
-  else if(it.type==='kingG'||it.type==='kingS'){const G=it.type==='kingG',v=(G?1000:200)*mul();if(G)S.kingG++;else S.kingS++;S.bonus+=v;sfx('king');S.flash=Math.max(S.flash,G?.35:.15);
+  else if(it.type==='kingG'||it.type==='kingS'){const G=it.type==='kingG',v=(G?1000:200)*mul();if(G)S.kingG++;else S.kingS++;S.bonus+=v;sfx('king');
     floatText(`${G?'금색':'은색'} 왕동전 +${v.toLocaleString('ko-KR')}`,it.x,it.y-34,G?'#ffe27a':'#eef2f7');burst(it.x,it.y,22,G?['#ffd95a','#fff1a8','#d99a1e']:['#e4e9f0','#ffffff','#9aa5b5'],300,'star')}
   else if(it.type==='carrot'){S.carrots++;S.bonus+=30*mul();sfx('crunch');floatText('+'+30*mul(),it.x,it.y-22,'#ffb15a');burst(it.x,it.y,8,['#ef8a2c','#4f9d5b'],140)}
   else if(it.type==='melon'){S.melons++;S.bonus+=60*mul();sfx('melon');floatText('+'+60*mul(),it.x,it.y-26,'#ff8fa3');burst(it.x,it.y,12,['#e2475d','#4f9d5b','#1c1418'],180)}
@@ -1073,16 +1075,9 @@ function drawFire(o,front){
 function drawItem(it){
   const t=S.t;
   if(it.type==='ring'){ctx.save();ctx.translate(it.x,it.y+Math.sin(t*4+it.x*.02)*2);ctx.scale(Math.max(.22,Math.abs(Math.cos(t*3+it.x*.013))),1);ctx.lineWidth=5;ctx.strokeStyle='#e9b13a';ctx.beginPath();ctx.arc(0,0,12,0,7);ctx.stroke();ctx.lineWidth=2;ctx.strokeStyle='#fff2b0';ctx.beginPath();ctx.arc(0,0,12,-2.4,-1.2);ctx.stroke();ctx.restore()}
-  else if(it.type==='kingG'||it.type==='kingS'){const G=it.type==='kingG',y=it.y+Math.sin(t*3+it.x*.02)*4,sx=Math.max(.3,Math.abs(Math.cos(t*2.4+it.x*.01)));
-    ctx.fillStyle=G?'rgba(255,220,100,.35)':'rgba(230,240,255,.35)';ctx.beginPath();ctx.arc(it.x,y,34+Math.sin(t*6)*3,0,7);ctx.fill();
-    ctx.save();ctx.translate(it.x,y);ctx.scale(sx,1);
-    ctx.fillStyle=G?'#b57a0e':'#7d8796';ctx.beginPath();ctx.arc(0,2,23,0,7);ctx.fill();
-    ctx.fillStyle=G?'#e3a524':'#aab4c2';ctx.beginPath();ctx.arc(0,0,23,0,7);ctx.fill();ctx.fillStyle=G?'#ffd95a':'#e4e9f0';ctx.beginPath();ctx.arc(0,0,18,0,7);ctx.fill();
-    ctx.strokeStyle=G?'#c58a12':'#8a94a3';ctx.lineWidth=2;ctx.setLineDash([3,3]);ctx.beginPath();ctx.arc(0,0,20.5,0,7);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle=G?'#b57a0e':'#7d8796';ctx.beginPath();ctx.moveTo(-10,-2);ctx.lineTo(-10,-12);ctx.lineTo(-5,-7);ctx.lineTo(0,-14);ctx.lineTo(5,-7);ctx.lineTo(10,-12);ctx.lineTo(10,-2);ctx.closePath();ctx.fill();
-    ctx.font=`15px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('K',0,8);
-    ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.ellipse(-9,-10,5,2.5,-.6,0,7);ctx.fill();ctx.restore();
-    if(Math.sin(t*5+it.x)>.7){ctx.fillStyle='#ffffff';starPath(ctx,it.x+16,y-18,6,2);ctx.fill()}}
+  else if(it.type==='kingG'||it.type==='kingS'){const G=it.type==='kingG',y=it.y+Math.sin(t*4+it.x*.02)*2,sx=Math.max(.22,Math.abs(Math.cos(t*3+it.x*.013)));
+    ctx.save();ctx.translate(it.x,y);ctx.scale(sx,1);ctx.fillStyle=G?'#d99a1e':'#9aa5b5';ctx.beginPath();ctx.arc(0,0,24,0,7);ctx.fill();ctx.fillStyle=G?'#ffd95a':'#e4e9f0';ctx.beginPath();ctx.arc(0,0,18.5,0,7);ctx.fill();
+    ctx.fillStyle=G?'#b57a0e':'#7d8796';ctx.font=`26px ${FONT}`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('K',0,1.5);ctx.restore()}
   else if(it.type==='chicken'){const y=it.y+Math.sin(t*4+it.x*.02)*3;ctx.save();ctx.translate(it.x,y);ctx.rotate(-.6+Math.sin(t*3)*.12);
     ctx.fillStyle='#fff4e6';ctx.fillRect(6,-3,14,6);for(const dy of[-4,4]){ctx.beginPath();ctx.arc(21,dy,4,0,7);ctx.fill()}
     ctx.fillStyle='#a8561c';ctx.beginPath();ctx.ellipse(-4,0,15,12,0,0,7);ctx.fill();ctx.fillStyle='#d9822e';ctx.beginPath();ctx.ellipse(-6,-2,12,9,0,0,7);ctx.fill();
