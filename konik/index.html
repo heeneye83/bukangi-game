@@ -135,7 +135,6 @@ body.playing .fbtn{display:block;position:absolute;right:calc(env(safe-area-inse
     <span><b>탄광</b>은화 20 · 금화 50 · 구씨 고래를 먹으면 고래 타고 질주</span>
     <span><b>스케이트보드</b>공원에서 등장, 한 번 막아주는 라이프</span>
     <span><b>먹이</b>링 10 · 당근 30 · 치킨 45 · 수박 60</span>
-    <span><b>왕동전</b>줄 끝에 등장 · 은색 200 · 금색 1,000</span>
     <span><b>물웅덩이</b>부캉이가 얼굴을 내민 물만 바다로 · 그냥 물은 하트 −1</span>
     <span><b>바닷속</b>물고기 +25 · 가시 복어 −40</span>
     <span><b>HEVIL 곰</b>12초 동안 HEVIL 스테이지, 점수 2배</span>
@@ -381,7 +380,7 @@ pauseBtn.addEventListener('click',()=>{if(phase==='play')pause();else if(phase==
 /* ---------- overlay ---------- */
 function showTitle(){card.innerHTML=`<p class="eyebrow">HUHU · KONIK ADVENTURE</p><h2>코닉의 모험</h2><p>서커스 공연장에서 출발해 황금 탄광을 지나 잔디밭 공원까지 달려요</p><button class="go" id="go" type="button">모험 시작</button><p class="hint">${touchMode?'화면을 탭하면 점프 · 시작하면 휴대폰을 가로로 돌려서 플레이하세요':'스페이스 · ↑ · 화면 탭으로 점프'}</p>`;ovl.hidden=false;document.getElementById('go').onclick=start}
 let overT=0;
-function showOver(){const s=score();card.innerHTML=`<p class="eyebrow">${STAGES[S.stage].name} · ${meters().toLocaleString('ko-KR')}m</p><h2>모험 끝!</h2><p class="big">${s.toLocaleString('ko-KR')}점</p><p class="sub">${S.gold||S.silver?`금화 ${S.gold} · 은화 ${S.silver} · `:''}${S.kingG||S.kingS?`왕동전 금 ${S.kingG} · 은 ${S.kingS} · `:''}링 ${S.rings} · 당근 ${S.carrots} · 치킨 ${S.chicken} · 수박 ${S.melons} · 물고기 ${S.fish} · 진주 ${S.pearls} · 최고 기록 ${best.toLocaleString('ko-KR')}점</p><div class="row"><button class="go" id="go" type="button">다시 하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=start;bindQuit()}
+function showOver(){const s=score();card.innerHTML=`<p class="eyebrow">${STAGES[S.stage].name} · ${meters().toLocaleString('ko-KR')}m</p><h2>모험 끝!</h2><p class="big">${s.toLocaleString('ko-KR')}점</p><p class="sub">${S.gold||S.silver?`금화 ${S.gold} · 은화 ${S.silver} · `:''}링 ${S.rings} · 당근 ${S.carrots} · 치킨 ${S.chicken} · 수박 ${S.melons} · 물고기 ${S.fish} · 진주 ${S.pearls} · 최고 기록 ${best.toLocaleString('ko-KR')}점</p><div class="row"><button class="go" id="go" type="button">다시 하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=start;bindQuit()}
 function showPause(){card.innerHTML=`<h2>잠시 쉬는 중</h2><div class="row"><button class="go" id="go" type="button">계속하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=resume;bindQuit()}
 function bindQuit(){const q=document.getElementById('quit');if(q)q.onclick=quit}
 /* phone: full-screen landscape play */
@@ -442,7 +441,7 @@ function spawnMine(){
     case'miner':spawnEnemy('miner',x);coinArc(x-70,5,150,'gold');break;
     case'mole':spawnEnemy('mole',x+80);break;
     case'mushroom':spawnEnemy('mushroom',x);for(let i=0;i<4;i++)S.items.push({type:'silver',x:x+110+i*40,y:GROUND-40});break;
-    case'coins':{const y=rand(110,190);for(let i=0;i<5;i++)S.items.push({type:i%3===1?'gold':'silver',x:x+i*42,y:GROUND-y-Math.sin(i*.8)*24});S.items.push({type:Math.random()<.3?'kingG':'kingS',x:x+5*42+14,y:GROUND-y-Math.sin(5*.8)*24-6});break}
+    case'coins':{const y=rand(110,190);for(let i=0;i<5;i++)S.items.push({type:i%3===1?'gold':'silver',x:x+i*42,y:GROUND-y-Math.sin(i*.8)*24});break}
   }
   S.nextSpawn=rand(380,600)*(.85+S.speed/1600);
 }
@@ -513,8 +512,7 @@ function spawnTick(){const ni=S.items.length,no=S.obs.length,np=S.pits.length;sp
   for(const q of S.pits.slice(np))start=Math.max(start,q.x+q.w+40);
   const end=W+50+S.nextSpawn-70,wave=Math.random()<.35;
   if(Math.random()<.7){let lastX=-1,lastY=0;
-    for(let x=start,i=0;x<=end;x+=56,i++){const y=GROUND-40-(wave?Math.abs(Math.sin(i*.5))*70:0);addItem({type:i%5===4?(Math.random()<.5?'chicken':'carrot'):'ring',x,y});lastX=x;lastY=y}
-    if(lastX>0&&Math.random()<.45)S.items.push({type:Math.random()<.25?'kingG':'kingS',x:lastX+62,y:Math.min(lastY,GROUND-46)-10})}
+    for(let x=start,i=0;x<=end;x+=56,i++){const y=GROUND-40-(wave?Math.abs(Math.sin(i*.5))*70:0);addItem({type:i%5===4?(Math.random()<.5?'chicken':'carrot'):'ring',x,y});lastX=x;lastY=y}}
 }
 function spawnRun(){
   if(S.dash>0){spawnDash();return}
