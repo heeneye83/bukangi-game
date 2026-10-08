@@ -68,7 +68,6 @@ canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-
 button{touch-action:manipulation}
 .stage,canvas{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .fbtn{display:none}
-.rotate{display:none}
 /* phone play mode: the stage takes the whole screen, letterboxed to 16:9 */
 body.playing{overflow:hidden;touch-action:none}
 body.playing .bar,body.playing .cast{display:none}
@@ -79,13 +78,12 @@ body.playing canvas{height:auto;aspect-ratio:16/9;width:min(100%,calc(100vh * 16
 @supports (height:100dvh){body.playing canvas{width:min(100%,calc((100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px)) * 16 / 9))}}
 body.playing .fbtn{display:block;position:absolute;right:calc(env(safe-area-inset-right,0px) + 10px);bottom:calc(env(safe-area-inset-bottom,0px) + 10px);z-index:2;
   font:inherit;font-size:13px;color:var(--cream);background:rgba(37,18,43,.6);border:1px solid rgba(255,244,230,.35);border-radius:999px;padding:8px 14px}
-.rotate{position:fixed;inset:0;z-index:30;background:var(--ground);color:var(--cream);flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding-inline:24px}
-.rotate p{margin:0;font-family:var(--font-display);font-size:24px;color:var(--gold)}
-.rotate span{font-size:14px;color:var(--muted)}
-.rotate svg{width:84px;height:84px;animation:turn 2.2s ease-in-out infinite}
-@keyframes turn{0%,25%{transform:rotate(0)}55%,100%{transform:rotate(-90deg)}}
-@media (prefers-reduced-motion:reduce){.rotate svg{animation:none;transform:rotate(-90deg)}}
-@media (orientation:portrait){body.playing .rotate{display:flex}}
+/* held upright: turn the stage sideways so the phone just needs turning, even with rotation lock on */
+@media (orientation:portrait){
+  body.playing .stage{inset:auto;top:50%;left:50%;width:100vh;height:100vw;padding:0;transform:translate(-50%,-50%) rotate(90deg)}
+  body.playing canvas{width:min(100%,calc(100vw * 16 / 9))}
+}
+@supports (height:100dvh){@media (orientation:portrait){body.playing .stage{width:100dvh}}}
 .hint{font-size:max(11px,1.5cqw)!important;color:var(--muted)!important}
 
 .cast{display:grid;grid-template-columns:auto 1fr;gap:16px 24px;align-items:center}
@@ -118,8 +116,6 @@ body.playing .fbtn{display:block;position:absolute;right:calc(env(safe-area-inse
   <div class="ovl" id="ovl"><div class="card" id="card"></div></div>
   <button class="fbtn" id="fpause" type="button">일시정지</button>
 </div>
-
-<div class="rotate" id="rotate" role="status"><svg viewBox="0 0 84 84" aria-hidden="true"><rect x="26" y="8" width="32" height="68" rx="7" fill="none" stroke="#f2c14e" stroke-width="4"/><circle cx="42" cy="66" r="3" fill="#f2c14e"/></svg><p>휴대폰을 가로로 돌려주세요</p><span>가로 화면에서 코닉이 크게 달려요</span><button class="tbtn" id="rotQuit" type="button">처음 화면으로</button></div>
 
 <section class="cast">
   <div>
@@ -317,7 +313,6 @@ cv.addEventListener('pointerdown',e=>{e.preventDefault();try{cv.setPointerCaptur
 ['pointerup','pointercancel','lostpointercapture'].forEach(n=>cv.addEventListener(n,()=>release()));
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&phase==='play')pause()});
 addEventListener('blur',()=>{if(phase==='play'&&performance.now()>ignoreBlurUntil)pause()});
-document.getElementById('rotQuit').addEventListener('click',()=>quit());
 document.getElementById('fpause').addEventListener('click',()=>{if(phase==='play')pause()});
 sndBtn.addEventListener('click',()=>{muted=!muted;save('konik.muted',muted);sndBtn.textContent=muted?'효과음 꺼짐':'효과음 켜짐';if(!muted)sfx('ring')});
 sndBtn.textContent=muted?'효과음 꺼짐':'효과음 켜짐';
@@ -326,7 +321,7 @@ bgmBtn.addEventListener('click',()=>{musicOn=!musicOn;save('konik.music',musicOn
 pauseBtn.addEventListener('click',()=>{if(phase==='play')pause();else if(phase==='paused')resume()});
 
 /* ---------- overlay ---------- */
-function showTitle(){card.innerHTML=`<p class="eyebrow">HUHU TOY CIRCUS</p><h2>KONIK 서커스 런</h2><p>불의 링을 통과하고, 물에 빠지면 부캉이를 만나요</p><button class="go" id="go" type="button">공연 시작</button><p class="hint">${touchMode?'화면을 탭하면 점프 · 휴대폰을 가로로 돌리면 크게 보여요':'스페이스 · ↑ · 화면 탭으로 점프'}</p>`;ovl.hidden=false;document.getElementById('go').onclick=start}
+function showTitle(){card.innerHTML=`<p class="eyebrow">HUHU TOY CIRCUS</p><h2>KONIK 서커스 런</h2><p>불의 링을 통과하고, 물에 빠지면 부캉이를 만나요</p><button class="go" id="go" type="button">공연 시작</button><p class="hint">${touchMode?'화면을 탭하면 점프 · 시작하면 휴대폰을 가로로 돌려서 플레이하세요':'스페이스 · ↑ · 화면 탭으로 점프'}</p>`;ovl.hidden=false;document.getElementById('go').onclick=start}
 let overT=0;
 function showOver(){const s=score();card.innerHTML=`<p class="eyebrow">CURTAIN CALL</p><h2>공연 끝!</h2><p class="big">${s.toLocaleString('ko-KR')}점</p><p class="sub">링 ${S.rings} · 당근 ${S.carrots} · 수박 ${S.melons} · 진주 ${S.pearls} · 최고 기록 ${best.toLocaleString('ko-KR')}점</p><div class="row"><button class="go" id="go" type="button">다시 하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=start;bindQuit()}
 function showPause(){card.innerHTML=`<h2>잠시 쉬는 중</h2><div class="row"><button class="go" id="go" type="button">계속하기</button>${touchMode?'<button class="go ghost" id="quit" type="button">나가기</button>':''}</div>`;ovl.hidden=false;document.getElementById('go').onclick=resume;bindQuit()}
@@ -342,8 +337,8 @@ function quit(){musicStop();exitFull();newGame();phase='title';rotPaused=false;s
 function onOrient(){if(!document.body.classList.contains('playing'))return;
   if(portraitMQ.matches){if(phase==='play'){pause();rotPaused=true}}
   else if(rotPaused&&phase==='paused'){rotPaused=false;setTimeout(()=>{if(phase==='paused'&&!portraitMQ.matches)resume()},500)}}
-if(portraitMQ.addEventListener)portraitMQ.addEventListener('change',onOrient);else if(portraitMQ.addListener)portraitMQ.addListener(onOrient);
-function start(){getAC();enterFull();newGame();rotPaused=false;musicStart(true);musicWater(false);phase='play';ovl.hidden=true;held=false;pressQ=releaseQ=0;cv.focus&&cv.focus();pauseBtn.textContent='일시정지';if(touchMode&&portraitMQ.matches){pause();rotPaused=true}}
+
+function start(){getAC();enterFull();newGame();rotPaused=false;musicStart(true);musicWater(false);phase='play';ovl.hidden=true;held=false;pressQ=releaseQ=0;cv.focus&&cv.focus();pauseBtn.textContent='일시정지'}
 function pause(){phase='paused';musicStop();held=false;showPause();pauseBtn.textContent='계속하기'}
 function resume(){phase='play';musicStart(false);ovl.hidden=true;held=false;pressQ=releaseQ=0;last=performance.now();pauseBtn.textContent='일시정지'}
 function gameOver(){phase='over';musicStop();overT=0;const s=score();if(s>best){best=s;save('konik.best',best);bestEl.textContent=best}sfx('over');setTimeout(()=>{if(phase==='over')showOver()},650)}
