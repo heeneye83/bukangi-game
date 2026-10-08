@@ -691,7 +691,7 @@ function updateRun(dt,presses,releases){
 }
 function dropBoard(){const p=S.p;S.board=false;S.inv=1.3;S.shake=.25;S.combo=0;sfx('clack');
   S.parts.push({type:'board',x:p.x+40,y:p.y-6,vx:-240,vy:-520,life:1.1,max:1.1,r:0,vr:-11,s:1,c:''});floatText('보드가 대신 막아줬어요!',p.x+50,p.y-110,'#ffe27a')}
-const DASHLEN=[9000,13000,13000];
+const DASHLEN=[6300,9100,9100];
 function whaleOK(){const nx=STAGES[S.stage+1];return !S.seen['whale'+S.stage]&&(!nx||S.dist+DASHLEN[S.stage]+3000<nx.start)}
 function spawnWhale(x){S.seen['whale'+S.stage]=1;S.items.push({type:'whale',x:x+40,y:GROUND-150});ringArc(x-100,3,80)}
 function startDash(){
