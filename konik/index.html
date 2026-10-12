@@ -102,7 +102,7 @@ body.playing .fbtn{display:block;position:absolute;right:calc(env(safe-area-inse
 
 
 <header class="bar">
-  <h1>코닉의 모험<small>PROTOTYPE 3</small></h1>
+  <h1>코닉의 모험<small>PROTOTYPE 3 · 갈매기</small></h1>
   <div class="tools">
     <span class="best">최고 기록<b id="best">0</b></span>
     <button class="tbtn" id="bgm" type="button">음악 켜짐</button>
@@ -507,7 +507,7 @@ function spawnPark(){
   S.nextSpawn=rand(380,620)*(.85+S.speed/1600)+extra;
 }
 function beginStage(i){
-  S.prevStage=S.stage;S.stage=i;S.sd=0;S.stageFade=0;S.stageT=3.2;S.gullT=2.5;sfx('stage');musicSetTrack(STAGES[i].key);
+  S.prevStage=S.stage;S.stage=i;S.sd=0;S.stageFade=0;S.stageT=3.2;S.gullT=.8;sfx('stage');musicSetTrack(STAGES[i].key);
   const px=S.p.x;S.obs=S.obs.filter(o=>o.x<px-40&&o.type!=='bshot');S.items=S.items.filter(it=>it.x<px+40);S.pits=[];S.nextSpawn=650;S.boss=null;S.bossWait=false;
   S.plats=[];if(STAGES[i].key==='candy')addPlat(-300,W+700,GROUND);
   const k=STAGES[i].key;burst(px+40,S.p.y-50,26,k==='mine'?['#fff1a8','#f2c14e','#d49a1c']:k==='candy'?['#ff8fc8','#7ad0ff','#ffe27a','#fff4e6']:k==='circus'?['#ef8fa6','#f2c14e','#fff4e6']:['#6cc04a','#fff4e6','#f6b6c8'],320,'star');
@@ -646,16 +646,16 @@ function collect(it){
    so they only get in the way of a jump. Their height is set from the cake island where they will meet KONIK. ---------- */
 function gullPlatY(x){let y=null;for(const pl of S.plats)if(pl.x<x+90&&pl.x+pl.w>x-90)y=y==null?pl.y:Math.min(y,pl.y);return y==null?GROUND:y}
 function spawnGull(){const vx=rand(110,170)+S.lap*20,x=W+60,t=(x-S.p.x-30)/(S.speed+vx),my=gullPlatY(S.p.x+30+S.speed*t),y=Math.max(110,my-rand(118,170));
-  S.obs.push({type:'gull',x,y,y0:y,w:76,h:34,vx,ph:Math.random()*6,amp:rand(6,13)})}
-function gullTick(dt){if(S.boss||S.bossWait||S.space>0||S.dash>0||S.stageT>0)return;if(S.gullT==null)S.gullT=2;
-  S.gullT-=dt;if(S.gullT<=0){spawnGull();S.gullT=rand(3.2,5.2)/(1+S.lap*.25)}}
-function drawGull(o){const f=Math.sin(o.ph),cx=o.x+o.w/2,cy=o.y+(o.dead?(o.dy||0)*260:0);ctx.save();ctx.translate(cx,cy);ctx.scale(1.4,1.4);
+  S.obs.push({type:'gull',x,y,y0:y,w:84,h:36,vx,ph:Math.random()*6,amp:rand(6,13)})}
+function gullTick(dt){if(S.boss||S.bossWait||S.space>0||S.dash>0||S.stageT>0)return;if(S.gullT==null)S.gullT=.8;
+  S.gullT-=dt;if(S.gullT<=0){spawnGull();S.gullT=rand(2.6,4.2)/(1+S.lap*.25)}}
+function drawGull(o){const f=Math.sin(o.ph),cx=o.x+o.w/2,cy=o.y+(o.dead?(o.dy||0)*260:0);ctx.save();ctx.translate(cx,cy);ctx.scale(1.55,1.55);ctx.shadowColor='rgba(60,30,70,.45)';ctx.shadowBlur=8;ctx.shadowOffsetY=3;
   if(o.dead)ctx.rotate((o.dy||0)*6);else ctx.rotate(-.08+f*.05);
   const wing=(dark)=>{ctx.fillStyle=dark?'#8e9aa6':'#c3ccd5';ctx.beginPath();ctx.moveTo(-9,-3);ctx.quadraticCurveTo(-6,-6-15*f,1,-5-17*f);ctx.lineTo(15,-4-27*f);ctx.lineTo(9,-1);ctx.closePath();ctx.fill();
     ctx.fillStyle=dark?'#1f232a':'#2b2f36';ctx.beginPath();ctx.moveTo(15,-4-27*f);ctx.lineTo(7.4,-4.6-21.5*f);ctx.lineTo(10.6,-2.9-17*f);ctx.closePath();ctx.fill()};
   wing(true);
   ctx.fillStyle='#9aa6b2';ctx.beginPath();ctx.moveTo(14,-4);ctx.lineTo(29,-8);ctx.lineTo(30,3);ctx.lineTo(14,4);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#ffffff';ctx.beginPath();ctx.ellipse(1,0,20,9,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(-17,-5,8.5,0,7);ctx.fill();
+  ctx.fillStyle='#ffffff';ctx.strokeStyle='#4a4e5c';ctx.lineWidth=1.4;ctx.beginPath();ctx.ellipse(1,0,20,9,0,0,7);ctx.arc(-17,-5,8.5,0,7);ctx.stroke();ctx.shadowColor='transparent';ctx.beginPath();ctx.ellipse(1,0,20,9,0,0,7);ctx.fill();ctx.beginPath();ctx.arc(-17,-5,8.5,0,7);ctx.fill();
   ctx.fillStyle='rgba(120,140,160,.25)';ctx.beginPath();ctx.ellipse(4,4,15,4,0,0,7);ctx.fill();
   ctx.fillStyle='#f2c14e';ctx.beginPath();ctx.moveTo(-23,-7);ctx.lineTo(-37,-3.5);ctx.lineTo(-23,-1.5);ctx.closePath();ctx.fill();ctx.fillStyle='#e2475d';ctx.beginPath();ctx.arc(-31.5,-3.4,1.6,0,7);ctx.fill();
   ctx.fillStyle='#1c1418';ctx.beginPath();ctx.arc(-19.5,-6.5,2,0,7);ctx.fill();
