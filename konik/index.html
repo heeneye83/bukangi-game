@@ -176,57 +176,82 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const CREAM=hex('#fff4e6');
 const SECTION_BG=[hex('#f19bb0'),hex('#2fb0a8'),hex('#8ccbe4')];
 
-/* ---------- KONIK drawing (unit space: feet at y=0, facing right) ---------- */
-const HP=[[10,-60],[60,-60],[74,-56],[81,-44],[82,-30],[80,-26],[66,-28],[30,-28],[14,-26],[11,-30],[8,-40],[8,-56]];
-// head + neck piece, nods around the base of the neck
-const NECK=[[50,-57],[57,-97],[62,-111],[68,-99],[90,-86],[95,-78],[91,-71],[77,-71],[72,-65],[81,-44],[77,-36],[56,-40]];
-const NECK_PIVOT=[64,-48];
-const LEG=[[-6.5,0],[6.5,0],[6,34],[-6,34]]; // leg in local space: pivot at hip, foot at y=34
-const LEG_PIVOTS={bi:[24,-34],fi:[80,-34],bo:[19,-34],fo:[75,-34]};
-const MANE=[[51,-57],[44,-70],[45,-88],[51,-104],[60,-113],[63,-101],[57,-97],[53,-61]];
-const TAIL=[[11,-58],[2,-55],[-6,-42],[-9,-24],[-5,-14],[-1,-24],[3,-38],[10,-47]];
-const MUZZLE=[[86,-88],[97,-78],[92,-69],[83,-72]];
+/* ---------- KONIK drawing (unit space: feet at y=0, facing right) ----------
+   Silhouette traced from HUHU's wooden KONIK pieces: square body, hooked tail,
+   tapered legs, an arched mane over the neck. */
+const HP=[[10,-59.9],[82,-59.9],[82,-21.7],[10,-21.7]];
+// head + neck piece, nods around the base of the neck (its base hides behind the body)
+const NECK=[[46.5,-51.9],[47.4,-60.2],[47.7,-73.4],[48.7,-80],[51.3,-86.7],[55.4,-92.5],[60.7,-97.1],[68,-100.8],[77.4,-102.2],[85.4,-102],[82.2,-95.2],[97.5,-71.3],[95.5,-68.6],[93.1,-66.7],[89.5,-66],[80.1,-72.7],[78.6,-72.5],[82,-59.9],[82,-51.9]];
+const NECK_PIVOT=[66,-55];
+const MANE=[[47.4,-51.9],[47.4,-60.2],[47.7,-73.4],[48.7,-80],[51.3,-86.7],[55.4,-92.5],[60.7,-97.1],[68,-100.8],[77.4,-102.2],[85.4,-102],[81.8,-94.2],[76.9,-94],[72.6,-93],[68.7,-91.1],[65.3,-88.4],[62.7,-85.5],[60.7,-82.1],[59.3,-77.8],[58.3,-73],[57.6,-67.7],[57.1,-62.8],[56.9,-59.9],[56.9,-51.9]];
+const TAIL=[[15.1,-59.9],[4.4,-59.9],[0.1,-58.2],[-2.3,-56.1],[-4.3,-52.4],[-4.7,-49.5],[-4.7,-31.7],[-3.8,-30.7],[6.9,-30.9],[6.9,-49.5],[7.6,-51.2],[8.6,-52.2],[10,-52.4],[15.1,-52.4]];
+// legs in local space: pivot at the hip, foot at y=26; outer edge straight, inner edge tapers
+const LEG_B=[[-7,-8],[13.2,-8],[2.7,26],[-7,26]],LEG_F=[[-14.1,-8],[7,-8],[7,26],[-3.9,26]];
+const LEG_PIVOTS={bi:[22,-26],fi:[70,-26],bo:[17,-26],fo:[75,-26]};
+const LEG_FOOT=26;
+const HEADP=[[81.8,-95.9],[78.4,-94],[75.5,-90.1],[74,-85],[74.5,-79.7],[76.7,-75.4],[79.8,-72.2],[102.1,-61.6],[104.5,-102.7]];
 const shape=(c,p)=>{c.beginPath();p.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath()};
-const PATCH=['#f6c3d1','#2f5fae','#e0709c','#8a7cc4','#4f9d5b','#ef8a2c','#c9a24a','#f2a7bd','#6d5fb0','#2a6fb8','#e98a4a','#5aa66a'];
-const STRIPES=['#e8728f','#2f74c9','#f6b6c8','#1c1418','#2f74c9','#9a88cc','#ef8a2c','#8fcbe8','#4f9d5b','#d9472f','#1c1418','#f2a7bd','#3aa35a','#8fcbe8','#f2c230','#d9472f'];
-const SPOTS=[[20,-46,10,7],[43,-48,11,7],[63,-38,7,6],[33,-36,5,4],[70,-82,6,8],[79,-95,4,5],[52,-73,4,4],[19,-13,4,6],[75,-16,5,7],[87,-80,4,4],[60,-55,5,4],[13,-50,4,4]];
-function maneGoldBlack(c){c.fillStyle='#1c1418';c.fillRect(-15,-120,90,125);c.save();c.translate(40,-70);c.rotate(-.7);c.fillStyle='#c9a24a';for(let y=-80;y<80;y+=13)c.fillRect(-80,y,160,6);c.restore()}
-function maneFlow(base,line){return c=>{c.fillStyle=base;c.fillRect(-15,-120,90,125);c.strokeStyle=line;c.lineWidth=1.6;for(let i=0;i<7;i++){c.beginPath();c.moveTo(40+i*3,-118);c.quadraticCurveTo(36+i*3,-80,-10+i*4,-10);c.stroke()}}}
+const fillAll=(c,col)=>{c.fillStyle=col;c.fillRect(-30,-130,150,170)};
+// metallic leaf with the fine diagonal brush texture of the painted pieces
+function maneLeaf(base,line){return c=>{fillAll(c,base);c.save();c.rotate(-.8);c.strokeStyle=line;c.lineWidth=.7;for(let x=-160;x<160;x+=2.6){c.beginPath();c.moveTo(x,-200);c.lineTo(x,200);c.stroke()}c.restore();
+  const g=c.createLinearGradient(40,-110,90,-60);g.addColorStop(0,'rgba(255,255,255,.28)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.08)');c.fillStyle=g;c.fillRect(-30,-130,150,170)}}
+function maneFlow(base,line){return c=>{c.fillStyle=base;c.fillRect(-15,-120,115,125);c.strokeStyle=line;c.lineWidth=1.6;for(let i=0;i<9;i++){c.beginPath();c.moveTo(48+i*4,-118);c.quadraticCurveTo(52+i*3,-80,40+i*4,-40);c.stroke()}}}
+// candy stripes fixed to the horse's x axis (white piece at the chest, then red, white…)
+function candy(c,ox=0){fillAll(c,'#fbf7f3');c.fillStyle='#e8503f';for(let x=71.76-10.24*9;x<120;x+=10.24)c.fillRect(x-ox,-130,5.12,170)}
+const RAINBOW=['#e8728f','#2f74c9','#f6b6c8','#1c1418','#2f74c9','#9a88cc','#ef8a2c','#8fcbe8','#4f9d5b','#d9472f','#1c1418','#f2a7bd','#3aa35a','#8fcbe8','#f2c230','#d9472f'];
 const SKINS={
-  patch:{name:'패치워크',inner:'#5a3f7a',muzzle:true,mane:maneGoldBlack,bg:'#ef8fa6',
-    body(c){c.fillStyle='#f2a7bd';c.fillRect(-12,-120,115,122);const xs=[-12,22,45,64,100],ys=[-120,-84,-56,-29,2];let k=0;
-      for(let i=0;i<4;i++)for(let j=0;j<4;j++){const x1=xs[i],x2=xs[i+1],y1=ys[j],y2=ys[j+1],f=(i+j)%2;
-        c.fillStyle=PATCH[(k*5+3)%12];c.beginPath();if(f){c.moveTo(x1,y1);c.lineTo(x2,y1);c.lineTo(x1,y2)}else{c.moveTo(x1,y1);c.lineTo(x2,y1);c.lineTo(x2,y2)}c.closePath();c.fill();
-        c.fillStyle=PATCH[(k*7+8)%12];c.beginPath();if(f){c.moveTo(x2,y1);c.lineTo(x2,y2);c.lineTo(x1,y2)}else{c.moveTo(x1,y1);c.lineTo(x2,y2);c.lineTo(x1,y2)}c.closePath();c.fill();k++}}},
-  stripe:{name:'스트라이프',inner:'#7a3b2a',muzzle:true,mane:maneFlow('#d8b25c','#b88a34'),bg:'#1fa6a0',
-    body(c){let i=0;for(let x=-12;x<104;x+=7.2)c.fillStyle=STRIPES[i++%STRIPES.length],c.fillRect(x,-120,7.4,122)}},
-  spot:{name:'스팟',inner:'#5fae9f',muzzle:false,mane:maneFlow('#f2d33b','#d9b51f'),bg:'#86c3de',
-    body(c){c.fillStyle='#93dccb';c.fillRect(-12,-120,115,122);c.fillStyle='#ef7a2c';for(const[x,y,a,b]of SPOTS){c.beginPath();c.ellipse(x,y,a,b,.4,0,7);c.fill()}}},
-  gold:{name:'황금',hidden:true,inner:'#9c6f0c',muzzle:true,mane:maneFlow('#b07d10','#7d5806'),bg:'#f2c14e',
-    body(c){const g=c.createLinearGradient(0,-120,0,0);g.addColorStop(0,'#fff1a8');g.addColorStop(.35,'#f2c14e');g.addColorStop(.7,'#d49a1c');g.addColorStop(1,'#a8740c');c.fillStyle=g;c.fillRect(-12,-120,115,122);
-      c.save();c.rotate(-.5);c.fillStyle='rgba(255,255,255,.38)';const o=((S?S.t:0)*70)%60;for(let i=-4;i<5;i++)c.fillRect(i*60+o,-170,10,300);c.restore()}}
+  // P57 — colour-block KONIK (crimson head, black neck, gold mane)
+  patch:{name:'컬러블록',bg:'#f28aa8',hoof:null,mane:maneLeaf('#d6cca6','rgba(150,135,95,.3)'),
+    tail:c=>fillAll(c,'#3aa6e8'),
+    leg:(c,k)=>fillAll(c,k[0]==='f'?'#25915f':'#d192d0'),
+    head(c){fillAll(c,'#1d2130');c.fillStyle='#b84455';shape(c,HEADP);c.fill();c.strokeStyle='rgba(0,0,0,.28)';c.lineWidth=1.4;c.beginPath();HEADP.slice(0,7).forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.stroke()},
+    body(c){c.fillStyle='#f4b55a';c.fillRect(-30,-130,150,170);
+      c.fillStyle='#5a52a8';c.fillRect(45.8,-130,20,170);
+      c.fillStyle='#f47e88';c.beginPath();c.moveTo(100,-60);c.lineTo(76.4,-60);c.ellipse(76.4,-39.7,16.3,20.3,0,-Math.PI/2,Math.PI,true);c.lineTo(60.1,40);c.lineTo(100,40);c.closePath();c.fill();
+      c.fillStyle='#5cc9a9';c.beginPath();c.moveTo(-30,-62);c.lineTo(31,-62);c.lineTo(31,-40.7);c.ellipse(13,-40.7,18,17.7,0,0,Math.PI/2);c.lineTo(-30,-23);c.closePath();c.fill()}},
+  // P13 — red & white candy-stripe KONIK, stripes run through the mane and tail
+  stripe:{name:'스트라이프',bg:'#f2a1c0',hoof:null,
+    body:c=>candy(c),head:c=>candy(c),mane:c=>candy(c),tail:c=>candy(c),
+    leg:(c,k)=>candy(c,LEG_PIVOTS[k][0])},
+  // P36 — mint KONIK in a striped blanket with a silver girth and a two-tone collar
+  mint:{name:'민트',bg:'#f5e575',hoof:'#ef8d4a',mane:maneLeaf('#dccfb2','rgba(160,140,100,.3)'),
+    tail(c){fillAll(c,'#82e2c4');c.fillStyle='#18899b';c.fillRect(-30,-33.8,60,20)},
+    leg:c=>fillAll(c,'#82e2c4'),
+    head(c){fillAll(c,'#82e2c4');c.fillStyle='#f2a167';c.fillRect(50,-65,50,12);
+      c.fillStyle='#18899b';c.beginPath();c.moveTo(50,-66.7);c.lineTo(58.3,-65);c.lineTo(81.5,-59.9);c.lineTo(100,-55.8);c.lineTo(100,-45);c.lineTo(50,-45);c.closePath();c.fill()},
+    body(c){fillAll(c,'#86e5c7');c.fillStyle='#c8405e';for(let x=13.6;x<82;x+=5.8)c.fillRect(x,-62,2.9,36);
+      const g=c.createLinearGradient(0,-26.6,0,-21.7);g.addColorStop(0,'#e3e8ec');g.addColorStop(.45,'#b7c1c8');g.addColorStop(1,'#8d99a2');c.fillStyle=g;c.fillRect(-30,-26.6,150,6);
+      const o=((S?S.t:0)*40)%110-15,h=c.createLinearGradient(o-6,0,o+6,0);h.addColorStop(0,'rgba(255,255,255,0)');h.addColorStop(.5,'rgba(255,255,255,.6)');h.addColorStop(1,'rgba(255,255,255,0)');c.fillStyle=h;c.fillRect(o-6,-26.6,12,5)}},
+  gold:{name:'황금',hidden:true,hoof:'#6b4a08',mane:maneFlow('#b07d10','#7d5806'),bg:'#f2c14e',
+    body(c){const g=c.createLinearGradient(0,-104,0,0);g.addColorStop(0,'#fff1a8');g.addColorStop(.35,'#f2c14e');g.addColorStop(.7,'#d49a1c');g.addColorStop(1,'#a8740c');c.fillStyle=g;c.fillRect(-30,-130,150,170);
+      c.save();c.rotate(-.5);c.fillStyle='rgba(255,255,255,.38)';const o=((S?S.t:0)*70)%60;for(let i=-4;i<5;i++)c.fillRect(i*60+o,-170,10,300);c.restore()}},
+  // star power: the old rainbow stripes
+  rainbow:{name:'무지개',hidden:true,hoof:'#1c1418',mane:maneFlow('#d8b25c','#b88a34'),bg:'#1fa6a0',
+    body(c){let i=0;for(let x=-30;x<120;x+=7.2)c.fillStyle=RAINBOW[i++%RAINBOW.length],c.fillRect(x,-130,7.4,170)}}
 };
 function drawHorse(c,x,y,s,key,rot=0,o={}){
-  const sk=SKINS[key];c.save();c.translate(x,y);c.scale(s,s);
+  const sk=SKINS[key]||SKINS.patch;c.save();c.translate(x,y);c.scale(s,s);
   if(rot){c.translate(46,-50);c.rotate(rot);c.translate(-46,50)}
   if(o.alpha!=null)c.globalAlpha=o.alpha;
-  const L=o.legs||{};
-  const leg=(k,dark)=>{const[px,py]=LEG_PIVOTS[k],a=L[k]||0;c.save();c.translate(px,py);c.rotate(a);shape(c,LEG);c.save();c.clip();
-    c.save();c.rotate(-a);c.translate(-px,-py);sk.body(c);c.restore();
-    if(dark){c.fillStyle='rgba(30,10,30,.38)';c.fillRect(-8,-2,16,40)}
-    c.fillStyle='#1c1418';c.fillRect(-8,27,16,9);c.restore();c.restore()};
-  leg('bi',true);leg('fi',true);
-  shape(c,TAIL);c.save();c.clip();sk.mane(c);c.restore();
-  leg('bo',false);leg('fo',false);
+  const L=o.legs||{},head=sk.head||sk.body,tail=sk.tail||sk.mane;
+  const shade=()=>{const g=c.createLinearGradient(0,-104,0,0);g.addColorStop(0,'rgba(255,255,255,.2)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.16)');c.fillStyle=g;c.fillRect(-30,-130,150,170)};
+  const leg=(k,dark)=>{const[px,py]=LEG_PIVOTS[k],a=L[k]||0,P=k[0]==='f'?LEG_F:LEG_B;c.save();c.translate(px,py);c.rotate(a);shape(c,P);c.save();c.clip();
+    if(sk.leg)sk.leg(c,k);else{c.save();c.rotate(-a);c.translate(-px,-py);sk.body(c);c.restore()}
+    if(sk.hoof){c.fillStyle=sk.hoof;c.fillRect(-16,LEG_FOOT-2.6,32,6)}
+    c.save();c.rotate(-a);c.translate(-px,-py);shade();c.restore();
+    if(dark){c.fillStyle='rgba(30,10,30,.38)';c.fillRect(-16,-10,32,40)}
+    c.restore();c.restore()};
   const ha=o.head!=null?o.head:(L.head||0),[nx,ny]=NECK_PIVOT;
   const headT=()=>{c.translate(nx,ny);c.rotate(ha);c.translate(-nx,-ny)};
-  const shade=()=>{const g=c.createLinearGradient(0,-112,0,0);g.addColorStop(0,'rgba(255,255,255,.2)');g.addColorStop(.5,'rgba(255,255,255,0)');g.addColorStop(1,'rgba(0,0,0,.16)');c.fillStyle=g;c.fillRect(-12,-120,115,122)};
-  if(o.glow!=null){c.lineJoin='round';c.lineWidth=10;c.strokeStyle=`hsl(${o.glow},95%,66%)`;shape(c,HP);c.stroke();c.save();headT();shape(c,NECK);c.stroke();shape(c,MANE);c.stroke();c.restore()}
-  shape(c,HP);c.save();c.clip();sk.body(c);shade();c.restore();
+  if(o.glow!=null){c.lineJoin='round';c.lineWidth=10;c.strokeStyle=`hsl(${o.glow},95%,66%)`;shape(c,HP);c.stroke();shape(c,TAIL);c.stroke();c.save();headT();shape(c,NECK);c.stroke();shape(c,MANE);c.stroke();c.restore()}
+  leg('bi',true);leg('fi',true);
+  shape(c,TAIL);c.save();c.clip();tail(c);shade();c.restore();
   c.save();headT();
-  shape(c,NECK);c.save();c.clip();sk.body(c);if(sk.muzzle){c.fillStyle='#1c1418';shape(c,MUZZLE);c.fill()}shade();c.restore();
+  shape(c,NECK);c.save();c.clip();head(c);shade();c.restore();
   shape(c,MANE);c.save();c.clip();sk.mane(c);c.restore();
   c.restore();
+  leg('bo',false);leg('fo',false);
+  shape(c,HP);c.save();c.clip();sk.body(c);shade();c.restore();
   c.restore();
 }
 
@@ -1251,7 +1276,7 @@ function drawItem(it){
   else if(it.type==='heart'){const y=it.y+Math.sin(t*3)*6;heartPath(it.x,y,15);ctx.fillStyle='#ff5b6e';ctx.fill();ctx.lineWidth=3;ctx.strokeStyle='#fff4e6';ctx.stroke()}
 }
 function heartPath(x,y,s){ctx.beginPath();ctx.moveTo(x,y+s*.9);ctx.bezierCurveTo(x-s*1.4,y,x-s*.9,y-s*1.1,x,y-s*.35);ctx.bezierCurveTo(x+s*.9,y-s*1.1,x+s*1.4,y,x,y+s*.9);ctx.closePath()}
-function curSkin(){return S.star>0?'stripe':SKEY()==='mine'?'gold':skin}
+function curSkin(){return S.star>0?'rainbow':SKEY()==='mine'?'gold':skin}
 function drawPlayerRun(){
   const p=S.p,blink=S.inv>0&&Math.floor(S.t*14)%2===0;
   let fy=GROUND;if(SKEY()==='candy'){fy=null;const cx=p.x+48*HS;for(const pl of S.plats)if(cx>pl.x&&cx<pl.x+pl.w&&pl.y>=p.y-2&&(fy==null||pl.y<fy))fy=pl.y}
