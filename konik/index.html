@@ -516,7 +516,7 @@ function spawnTick(){const ni=S.items.length,no=S.obs.length,np=S.pits.length;
   let special=false;
   if(S.space<=0&&S.dash<=0){
     if(whaleDue()){spawnWhale(W+50);S.nextSpawn=rand(420,560);special=true}
-    else if(S.runT>=S.nextCandyT&&!S.items.some(it=>it.type==='whale')){S.nextCandyT=S.runT+rand(34,42);S.lastCandy=S.dist;S.items.push({type:'candy',x:W+90,y:GROUND-170});ringArc(W-40,3,70);S.nextSpawn=rand(420,560);special=true}}
+    else if(S.runT>=S.nextCandyT&&S.sd<STAGES[S.stage].len-4000&&!S.items.some(it=>it.type==='whale')){S.nextCandyT=S.runT+rand(34,42);S.lastCandy=S.dist;S.items.push({type:'candy',x:W+90,y:GROUND-170});ringArc(W-40,3,70);S.nextSpawn=rand(420,560);special=true}}
   if(!special)spawnRun();
   if(S.space>0||S.dash>0)return;
   S.nextSpawn*=.77;
@@ -596,7 +596,7 @@ function collect(it){
   if(SWEET[it.type]){const d=SWEET[it.type],v=d.v*mul();if(d.s==='sweet')S.sweets++;else S.junk++;S.bonus+=v;
     sfx(d.s==='sweet'?'ring':'crunch');if(d.v>=40)floatText(`${d.name} +${v}`,it.x,it.y-26,'#ffd1e8');
     burst(it.x,it.y,d.v>=40?12:6,['#ff8fc8','#ffe27a','#7ad0ff','#fff4e6'],d.v>=40?200:120,d.v>=40?'star':'dot');return}
-  if(it.type==='candy'){startSpace();burst(it.x,it.y,26,['#ef5b8f','#7b6cf6','#2bb3ad','#f2c14e','#fff4e6'],320,'star')}
+  if(it.type==='candy'){if(S.boss||S.bossWait){S.bonus+=100;floatText('+100',it.x,it.y-30,'#ffd1e8');return}startSpace();burst(it.x,it.y,26,['#ef5b8f','#7b6cf6','#2bb3ad','#f2c14e','#fff4e6'],320,'star')}
   else if(it.type==='ring'){S.rings++;S.bonus+=10*mul();sfx('ring');burst(it.x,it.y,6,['#f2c14e','#fff2b0'],120)}
   else if(it.type==='chicken'){S.chicken++;S.bonus+=45*mul();sfx('crunch');floatText('+'+45*mul(),it.x,it.y-22,'#ffc27a');burst(it.x,it.y,8,['#c8742c','#fff4e6'],140)}
   else if(it.type==='kingG'||it.type==='kingS'){const G=it.type==='kingG',v=(G?1000:200)*mul();if(G)S.kingG++;else S.kingS++;S.bonus+=v;sfx('king');
@@ -655,8 +655,9 @@ const BOSS={
   mole:{name:'두더지 대왕',s:2.6,hb:[4,70,-44],shot:'coal',draw:(c,o)=>drawMole(c,o)},
   boar:{name:'멧돼지 대장',s:2.1,hb:[8,98,-62],shot:'acorn',draw:(c,o)=>drawBoar(c,o)},
   jelly:{name:'젤리 킹',s:.85,hb:[-80,80,-150],shot:'gumball',draw:(c,o)=>drawJellyKing(c,o)}};
-function startBossWait(){S.bossWait=true;S.nextSpawn=1e9;banner('보스가 다가와요…',1.6)}
-function bossReady(){const p=S.p;if(S.obs.some(o=>!o.dead&&o.x>p.x-60))return false;if(S.pits.some(q=>q.x+q.w>p.x-40))return false;
+/* the stage boss never shares the screen with the HEVIL stage: HEVIL bears and whales still on the way are cleared */
+function startBossWait(){S.bossWait=true;S.nextSpawn=1e9;S.items=S.items.filter(it=>it.type!=='candy'&&it.type!=='whale'||it.x<S.p.x-40);banner('보스가 다가와요…',1.6)}
+function bossReady(){const p=S.p;if(S.space>0||S.dash>0)return false;if(S.obs.some(o=>!o.dead&&o.x>p.x-60))return false;if(S.pits.some(q=>q.x+q.w>p.x-40))return false;
   if(SKEY()==='candy'){const pl=S.plats.find(pl=>pl.arena&&pl.x<p.x&&pl.x+pl.w>W+200);return!!pl&&p.onGround}return true}
 function spawnBoss(){const st=STAGES[S.stage],D=BOSS[st.boss],hp=Math.min(6,3+S.lap);
   const w=st.boss==='jelly'?170*D.s:100*D.s;
