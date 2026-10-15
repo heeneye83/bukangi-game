@@ -531,8 +531,6 @@ function drawPlayer(){
     const cols=['#ff5e7e','#ffa94d','#ffe066','#7be495','#5ac8fa','#9b8cff'];cx.save();cx.globalAlpha*=.75;
     cols.forEach((c,i)=>{cx.fillStyle=c;cx.fillRect(PX-300*gs,p.y-(112-i*9)*gs+Math.sin(G.t*14+i)*2,210*gs,9*gs)});cx.restore();
     cx.save();cx.shadowColor=blink?'#fff':'#ff7ad9';cx.shadowBlur=30}
-  const seat0=konikSeat(f,PX,p.y+bob,KS*gs);
-  if(p.wings&&seat0)drawWings(seat0,KS*gs,p.y<GY-1);
   if(p.dash>0){// 황금 질주 잔상 + 속도선
     cx.save();for(let i=3;i>=1;i--){cx.globalAlpha=.16*i/3;drawKonik(cx,'gold_'+skin,f,PX-i*34,p.y+bob,KS*gs)}cx.restore();
     cx.save();cx.strokeStyle='rgba(255,220,120,.55)';cx.lineWidth=3;for(let i=0;i<7;i++){const yy=p.y-20-i*16+Math.sin(G.t*30+i)*3,len=60+((i*37+G.t*900)%80);cx.beginPath();cx.moveTo(PX-90-len,yy);cx.lineTo(PX-90,yy);cx.stroke()}cx.restore();
@@ -540,6 +538,7 @@ function drawPlayer(){
   const seat=drawKonik(cx,p.dash>0?'gold_'+skin:skin,f,PX,p.y+bob,KS*gs,p.y<GY-1?-.06:(p.dash>0?-.05:0));
   if(p.dash>0)cx.restore();
   if(p.boost>0)cx.restore();
+  if(p.wings&&seat)drawWings(seat,KS*gs,p.y<GY-1);
   if(f===5)for(let i=0;i<2;i++)dustLine(PX-80*gs-i*18,GY-6-i*8);
   if(G.rider&&seat)drawRider(cx,seat,G.rider.arm>0?1:0,RS*gs);
 
@@ -547,8 +546,10 @@ function drawPlayer(){
 }
 function konikSeat(f,x,yb,s){const x0=x-KCX*s,y0=yb-KM.ch*s+4*s;return [x0+KM.sad[f][0]*s,y0+KM.sad[f][1]*s]}
 // 날개: 안장 바로 뒤에 붙고, 점프할 때 퍼덕임
-function drawWings(seat,s,air){const im=IMG.wings;if(!im)return;const fr=(air?(Math.floor(G.t*10)%2):(G.wingT>0?Math.floor(G.t*12)%2:1)),cw=im.width/2,ch=im.height,k=s*.56;
-  cx.drawImage(im,fr*cw,0,cw,ch,seat[0]-(cw-10)*k-14*s,seat[1]-(ch-30)*k-6*s,cw*k,ch*k)}
+function drawWings(seat,s,air){const im=IMG.wings;if(!im||!seat)return;const cw=im.width/2,ch=im.height,k=s*.5,t=G.t;
+  // 날개 뿌리를 안장 바로 앞 등에 고정하고, 뿌리를 축으로 돌려 퍼덕임 (각도가 클수록 위로 들림)
+  const a=air?.85+Math.sin(t*14)*.4:(G.wingT>0?.85+Math.sin(t*16)*.3:.82+Math.sin(t*4)*.06);
+  cx.save();cx.translate(seat[0]+10*s,seat[1]+2*s);cx.rotate(a);cx.drawImage(im,cw,0,cw,ch,-272*k,-86*k,cw*k,ch*k);cx.restore()}
 function dustLine(x,y){cx.strokeStyle='rgba(255,255,255,.35)';cx.lineWidth=3;cx.beginPath();cx.moveTo(x,y);cx.lineTo(x-30,y);cx.stroke()}
 function drawObjs(){
   for(const o of G.objs){
