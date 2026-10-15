@@ -124,8 +124,8 @@ const W=960,H=540,GY=452,PX=270;            // 바닥선, 코닉 화면 위치
 const KM_PX=9600,TOTAL=9;                    // 스테이지 1개 = 9600px, 9스테이지 (한 판 약 3분 10초)
 const SPD=1.05;                              // 전체 속도 배율
 // 스테이지별 난이도: 장애물 밀도·속도·연속 장애물·좀비 떼 추격 (1스테이지 → 9스테이지)
-// 1~4(악덕사장까지): 예전 어려운 난이도 · 5~7: +10% · 8~9 실험실: 한 단계 더
-const DIFF={dens:[1,1,1,1,1.1,1.1,1.1,1.18,1.2],spd:[1,1,1,1,1.03,1.03,1.03,1.05,1.06],combo:[.26,.34,.34,.34,.40,.40,.40,.44,.46],chase:[5.3,5.3,5.3,5.3,5.8,5.8,5.8,6.2,6.3]};
+// 1~4(악덕사장까지): 예전 어려운 난이도 · 5~7: +10% · 8~9 실험실: 서면과 이전 실험실 설정의 중간
+const DIFF={dens:[1,1,1,1,1.1,1.1,1.1,1.14,1.15],spd:[1,1,1,1,1.03,1.03,1.03,1.04,1.045],combo:[.26,.34,.34,.34,.40,.40,.40,.42,.43],chase:[5.3,5.3,5.3,5.3,5.8,5.8,5.8,6.0,6.05]};
 const STAGES=[
  {name:'STAGE 1 · 부산역 광장',short:'부산역',speed:360,fog:'rgba(255,170,120,.10)',ground:['#b9a58f','#8a7866','#6d5e50'],line:'rgba(80,60,40,.25)',tile:64},
  {name:'STAGE 2 · 전포 카페거리',short:'카페거리',speed:385,fog:'rgba(255,200,140,.08)',ground:['#9c5a48','#7a4236','#5a3028'],line:'rgba(40,20,15,.3)',tile:44},
@@ -185,6 +185,7 @@ const SFX={jump:()=>tone('square',520,880,.12,.05),coin:()=>tone('triangle',990,
   pop:()=>{noise(.08,.35,3000);tone('square',900,600,.05,.05)},
   out:()=>{tone('sawtooth',220,40,.9,.07);noise(.5,.2,600,.2)},
   chime:()=>[659,784,988,1318,1568].forEach((f,i)=>tone('sine',f,f,.6,.05,i*.12)),
+  slam:()=>{noise(.12,.6,700);tone('square',140,60,.18,.12)},
   hatch:()=>{noise(.35,.25,900);tone('square',180,120,.3,.04)},
   warp:()=>{for(let i=0;i<8;i++)tone('triangle',300+i*120,1400+i*80,.5,.035,i*.08);noise(1,.15,5000,.2)},
   smash:()=>{noise(.18,.35,1500);tone('square',260,90,.16,.06)}};
@@ -302,9 +303,12 @@ const HH={z_sci:124,z_doc:122,z_walk:122,z_run:118,z_office:122,z_ajumma:114,z_b
 function spawn(){
   const R=G.R,sec=G.sec,x=G.dist+W+80;
   if(x>G.finishX-500){G.nextSpawn=1e9;return}
-  if(G.djX.some(d=>Math.abs(d-x)<520)||G.objs.some(o=>o.kind==='ob'&&OB[o.type].proj==='fire'&&!o.hit&&o.x-G.dist>-150)||G.objs.some(o=>o.kind==='fairy'&&!o.got&&Math.abs(o.x-x)<300)||G.objs.some(o=>o.kind==='cit'&&Math.abs(o.x-x)<260)){G.nextSpawn=G.dist+240;return}
-  const list=G.fever>0?['walk','office','ajumma']:POOL[sec],type=list[Math.floor(R()*list.length)];
-  addOb(type,x);
+  if(G.djX.some(d=>Math.abs(d-x)<520)||G.objs.some(o=>o.kind==='fairy'&&!o.got&&Math.abs(o.x-x)<300)||G.objs.some(o=>o.kind==='cit'&&Math.abs(o.x-x)<260)){G.nextSpawn=G.dist+240;return}
+  const boss=G.objs.find(o=>o.kind==='ob'&&OB[o.type].proj==='fire'&&!o.hit&&o.x-G.dist>-150);
+  if(boss&&boss.ex>=boss.maxEx){G.nextSpawn=G.dist+240;return}
+  const BOSSPOOL=['walk','office','ajumma','pipe','run'];
+  const list=G.fever>0?['walk','office','ajumma']:boss?BOSSPOOL:POOL[sec],type=list[Math.floor(R()*list.length)];
+  addOb(type,x);if(boss)boss.ex++;
   // 장애물 위로 코인 아치
   const d=OB[type],n=5+Math.floor(R()*4);
   for(let i=0;i<n;i++){const px=x-160+i*46;let py;
@@ -322,7 +326,8 @@ function spawn(){
     for(let i=0;i<n2;i++){const u=(i-(n2-1)/2)/((n2-1)/2);G.objs.push({kind:'coin',hi:1,x:hx+i*44,y:hy+28*u*u})}}
   G.nextSpawn=x+gap-W-80;
   // 가끔 연속 조합
-  if(G.fever<=0&&R()<DIFF.combo[sec]){const t2=list[Math.floor(R()*list.length)];
+  if(boss)G.nextSpawn+=420;
+  if(!boss&&G.fever<=0&&R()<DIFF.combo[sec]){const t2=list[Math.floor(R()*list.length)];
     if(!OB[t2].big&&!d.big&&(!!OB[t2].air)!==(!!d.air)){addOb(t2,x+320);G.nextSpawn+=320}}
 }
 function addOb(type,x){const d=OB[type];const o={kind:'ob',type,x,x0:x,y:GY,f:Math.random()*2,hit:false,dance:G.fever>0&&d.z&&!d.air?1:0,ph:Math.random()*6};if(d.air)o.y=GY-d.air;G.objs.push(o)}
@@ -500,14 +505,14 @@ function updRider(dt){
   const r=G.rider;if(!r)return;r.arm=Math.max(0,r.arm-dt);
   if(G.fever>0||G.state!=='run')return;
   r.throwT-=dt;
-  if(r.throwT<=0){r.throwT=2.4+G.R()*.8;r.arm=.35;SFX.throw();
+  if(r.throwT<=0){r.throwT=5+G.R()*1.5;r.arm=.35;SFX.throw();
     const x0=PX-40,y0=G.p.y-170,tx=hordeX()+30,ty=GY-90,T=.5;
     G.stones.push({x:x0,y:y0,vx:(tx-x0)/T,vy:(ty-y0)/T-.5*1500*T,rot:0,t:T})}
 }
 function hordeX(){return -90+(1-G.gap/100)*230}
 function updStones(dt){
   for(const s of G.stones){s.t-=dt;s.vy+=1500*dt;s.x+=s.vx*dt;s.y+=s.vy*dt;s.rot+=dt*12;
-    if(s.t<=0){s.dead=1;SFX.bonk();G.gap=Math.min(100,G.gap+11);G.hordeSlow=1.8;G.lead=.9;
+    if(s.t<=0){s.dead=1;SFX.bonk();G.gap=Math.min(100,G.gap+8);G.hordeSlow=1.2;G.lead=.9;
       sparks(Math.max(30,s.x),s.y,'#ffd23c',8);pop(Math.max(70,s.x+20),GY-150,'멈칫!','#ffd23c')}}
   G.stones=G.stones.filter(s=>!s.dead);
 }
@@ -517,27 +522,38 @@ const TM_OFF=960;                       // 결승점 기준 타임머신 위치(
 function tmX(){return G.finishX+TM_OFF-G.dist}
 function updEnding(dt){const p=G.p;G.et+=dt;G.t+=dt;const e=G.et;
   G.speed=Math.max(0,G.endSpeed*(1-e/.9));G.dist+=G.speed*dt;
-  p.anim+=dt*(G.speed/34+(e>2.2&&e<3.5?14:0));p.vy+=2600*dt;p.y=Math.min(GY,p.y+p.vy*dt);if(p.y>=GY){p.y=GY;p.vy=0}p.slide=0;
+  p.anim+=dt*(G.speed/34+(e>2.2&&e<3.4?14:0));p.vy+=2600*dt;p.y=Math.min(GY,p.y+p.vy*dt);if(p.y>=GY){p.y=GY;p.vy=0}p.slide=0;
   G.gap=Math.min(100,G.gap+60*dt);G.hordeFade=Math.min(1,(G.hordeFade||0)+dt);
-  if(e>.3&&!G.tmBan){G.tmBan=1;banner('타임머신 발견!','좀비 바이러스가 퍼지기 전으로 돌아가 실험을 막자','#7fe3ff',2.6)}
+  if(e>.3&&!G.tmBan){G.tmBan=1;banner('타임머신 발견!','좀비 바이러스가 퍼지기 전으로 돌아가 실험을 막자','#7fe3ff',2.4)}
   if(e>1.2&&!G.tmOpen){G.tmOpen=1;SFX.hatch()}
   if(e>2.2&&!G.runIn){G.runIn=1;SFX.neigh()}
-  if(e>3.6&&!G.tmClose){G.tmClose=1;SFX.hatch()}
-  if(e>3.9&&!G.tmOn){G.tmOn=1;SFX.warp()}
-  if(e>3.9)G.shake=Math.max(G.shake,.06+.12*clamp((e-3.9)/1.6,0,1));
-  if(e>5.6&&!G.flashOn){G.flashOn=1;SFX.chime()}
-  G.shake=Math.max(0,G.shake-dt*.5);updFx(dt);if(e>6.6){G.state='done';endGame(true)}}
+  if(e>3.75&&!G.tmClose){G.tmClose=1;SFX.slam();G.shake=.35}
+  if(e>4.0&&!G.tmOn){G.tmOn=1;SFX.warp()}
+  if(e>4.0&&e<5.6)G.shake=Math.max(G.shake,.06+.14*clamp((e-4)/1.6,0,1));
+  if(e>5.6&&!G.tmBoom){G.tmBoom=1;SFX.boom();SFX.chime();G.shake=.5;for(let i=0;i<30;i++)sparks(tmX(),GY-150,['#7fe3ff','#ff5ad8','#fff','#ffd23c'][i%4])}
+  G.shake=Math.max(0,G.shake-dt*.6);updFx(dt);if(e>10){G.state='done';endGame(true)}}
+// 타임머신 열린 칸 안쪽(스프라이트 기준): 중심 x -23, 바닥에서 147 위 · 안쪽 바닥은 77 위
+const TM_IN={x:-23,cy:147,fy:77,rx:62,ry:64};
 function drawMachine(){const sx=tmX();if(sx>W+260)return;const end=G.state==='ending'||G.state==='done',e=end?G.et:0;
-  const open=end&&e>1.2&&e<3.6,on=end&&e>3.9,pw=on?clamp((e-3.9)/1.6,0,1):0,jit=on?(Math.random()-.5)*6*pw:0;
+  if(end&&e>6.1)return;
+  const open=end&&e>1.2&&e<3.75,on=end&&e>4.0,pw=on?clamp((e-4)/1.6,0,1):0,jit=on?(Math.random()-.5)*7*pw:0,van=end?clamp((e-5.6)/.5,0,1):0;
   cx.save();cx.translate(sx+jit,GY+6);
-  // 바닥 조명
-  const g=cx.createRadialGradient(0,-10,10,0,-10,260);g.addColorStop(0,`rgba(127,227,255,${.25+.45*pw})`);g.addColorStop(1,'rgba(127,227,255,0)');cx.fillStyle=g;cx.fillRect(-280,-260,560,290);
-  spr('tmachine',open?1:0,0,0,300);
-  if(on){cx.globalCompositeOperation='lighter';
-    for(let k=0;k<2;k++){const yy=-110-k*90+Math.sin(e*8+k)*4,rx=118+12*pw,c=k?'255,90,216':'90,224,255';cx.strokeStyle=`rgba(${c},${.5+.5*pw})`;cx.lineWidth=6+4*pw;cx.beginPath();cx.ellipse(0,yy,rx,22,0,0,7);cx.stroke()}
-    cx.strokeStyle=`rgba(220,245,255,${.8*pw})`;cx.lineWidth=2;for(let i=0;i<6;i++){const a=Math.random()*6.28,r1=90,r2=150+Math.random()*60;cx.beginPath();cx.moveTo(Math.cos(a)*r1,-150+Math.sin(a)*r1);cx.lineTo(Math.cos(a+.2)*(r1+r2)/2,-150+Math.sin(a+.25)*(r1+r2)/2);cx.lineTo(Math.cos(a)*r2,-150+Math.sin(a)*r2);cx.stroke()}
-    const gg=cx.createRadialGradient(0,-150,10,0,-150,240);gg.addColorStop(0,`rgba(255,255,255,${.5*pw})`);gg.addColorStop(1,'rgba(160,220,255,0)');cx.fillStyle=gg;cx.fillRect(-260,-400,520,420)}
+  const g=cx.createRadialGradient(0,-10,10,0,-10,260);g.addColorStop(0,`rgba(127,227,255,${(.25+.45*pw)*(1-van)})`);g.addColorStop(1,'rgba(127,227,255,0)');cx.fillStyle=g;cx.fillRect(-280,-260,560,290);
+  cx.save();if(van>0){cx.globalAlpha=1-van;cx.translate(0,-150);cx.scale(1-van*.95,1+van*.6);cx.translate(0,150)}
+  spr('tmachine',open?1:0,0,0,300);cx.restore();
+  // 문이 닫히는 순간 '탁!'
+  if(end&&e>3.75&&e<4.3){cx.save();cx.globalAlpha=1-clamp((e-3.75)/.55,0,1);cx.fillStyle='#fff';cx.font="34px 'Black Han Sans'";cx.textAlign='center';cx.lineWidth=6;cx.strokeStyle='#123';cx.strokeText('탁!',-110,-250);cx.fillText('탁!',-110,-250);cx.restore()}
+  if(on){cx.globalCompositeOperation='lighter';const a=1-van;
+    for(let k=0;k<2;k++){const yy=-110-k*90+Math.sin(e*8+k)*4,rx=118+12*pw+van*240,c=k?'255,90,216':'90,224,255';cx.strokeStyle=`rgba(${c},${(.5+.5*pw)*a})`;cx.lineWidth=6+4*pw;cx.beginPath();cx.ellipse(0,yy,rx,22+van*30,0,0,7);cx.stroke()}
+    cx.strokeStyle=`rgba(220,245,255,${.8*pw*a})`;cx.lineWidth=2;for(let i=0;i<7;i++){const t=Math.random()*6.28,r1=90,r2=150+Math.random()*80;cx.beginPath();cx.moveTo(Math.cos(t)*r1,-150+Math.sin(t)*r1);cx.lineTo(Math.cos(t+.2)*(r1+r2)/2,-150+Math.sin(t+.25)*(r1+r2)/2);cx.lineTo(Math.cos(t)*r2,-150+Math.sin(t)*r2);cx.stroke()}
+    const gg=cx.createRadialGradient(0,-150,10,0,-150,240+van*300);gg.addColorStop(0,`rgba(255,255,255,${.5*pw+.5*van*(1-van)*4})`);gg.addColorStop(1,'rgba(160,220,255,0)');cx.fillStyle=gg;cx.fillRect(-560,-700,1120,760)}
   cx.restore()}
+// 마지막 문구
+function drawSeason2(){if(!(G.state==='ending'||G.state==='done')||G.et<6.4)return;const a=clamp((G.et-6.4)/.8,0,1);cx.save();
+  cx.fillStyle=`rgba(10,6,20,${.55*a})`;cx.fillRect(0,0,W,H);cx.globalAlpha=a;cx.textAlign='center';
+  const rg=cx.createLinearGradient(W/2-260,0,W/2+260,0);['#ff5e7e','#ffa94d','#ffe066','#7be495','#5ac8fa','#9b8cff','#ff7ad9'].forEach((c,i)=>rg.addColorStop(i/6,c));
+  cx.fillStyle=rg;cx.font="56px 'Black Han Sans','Noto Sans KR',sans-serif";cx.fillText('시즌2를 기대해주세요',W/2,H/2-6);
+  cx.fillStyle='rgba(255,255,255,.88)';cx.font="700 16px 'Noto Sans KR',sans-serif";cx.fillText('코닉은 좀비 바이러스가 퍼지기 전의 부산으로 떠났습니다',W/2,H/2+34);cx.restore()}
 function startFever(){
   G.fever=6.5;G.beatAcc=.5;G.beatN=0;G.gap=Math.min(100,G.gap+10);
   banner('DANCE KING 등장!','좀비들이 춤추느라 멈췄어요 · 하이파이브하고 코인을 쓸어 담으세요','#ff5ad8',2.8);
@@ -553,13 +569,13 @@ function updEvents(dt,km){
   G.pulse=Math.max(0,G.pulse-dt*3);
   if(G.banner){G.banner.t-=dt;if(G.banner.t<=0)G.banner=null}
   for(let i=0;i<G.gorAt.length;i++)if(G.gorAt[i]&&km>=G.gorAt[i]-.07){G.gorAt[i]=0;addOb('gorilla',G.dist+W+140)}
-  for(let i=0;i<G.bossAt.length;i++)if(G.bossAt[i]&&km>=G.bossAt[i]-.07&&G.fever<=0){G.bossAt[i]=0;for(const o of G.objs)if(o.kind==='ob'&&o.x>G.dist+PX+120)o.x=-9999;addOb('boss',G.dist+W+120)}
+  for(let i=0;i<G.bossAt.length;i++)if(G.bossAt[i]&&km>=G.bossAt[i]-.07&&G.fever<=0){G.bossAt[i]=0;addOb('boss',G.dist+W+120);const b=G.objs[G.objs.length-1];b.maxEx=1+(G.R()<.5?1:0);b.ex=0}
   for(let i=0;i<G.fairyAt.length;i++)if(G.fairyAt[i]&&(G.p.wings||km>=6)){G.fairyAt[i]=0}else if(G.fairyAt[i]&&km>=G.fairyAt[i]-.06){G.fairyAt[i]=0;
     G.objs.push({kind:'fairy',x:G.dist+W+60,y0:GY-120,y:GY-120,f:0});if(i===0)banner('요정의 숲','반짝이는 요정을 만지거나 톡 누르면 날개가 생겨요','#ffb3e6',2.4)}
   updFire(dt);if(G.state!=='run')return;updPops(dt);if(G.state!=='run')return;updGhosts(dt);
-  if(km>=7&&G.p.wings){G.p.wings=0;SFX.bonk();G.fx.push({t:'wingfall',x:PX-30,y:G.p.y-90,vx:-160,vy:-200,l:1.6,m:1.6,r:0});
+  if(km>=6&&G.p.wings){G.p.wings=0;SFX.bonk();G.fx.push({t:'wingfall',x:PX-30,y:G.p.y-90,vx:-160,vy:-200,l:1.6,m:1.6,r:0});
     for(let i=0;i<10;i++)G.fx.push({t:'f',x:PX-40+Math.random()*30,y:G.p.y-90+Math.random()*30,vx:-60-Math.random()*160,vy:-80+Math.random()*120,l:1.2,m:1.2,r:Math.random()*6});
-    banner('실험실 보안 장치 작동!','요정 날개가 떨어져 나갔어요 · 이제 2단 점프만 할 수 있어요','#ff8aa8',2.4)}
+    banner('요정의 숲을 벗어났어요','요정 날개가 사라졌어요 · 이제 2단 점프만 할 수 있어요','#ff8aa8',2.4)}
   // 정전: 정전 실험실 입구에서 불이 깜빡이다 꺼짐
   if(km>=7.94&&!G.outSeen){G.outSeen=1;SFX.out()}
   if(km>=8&&!G.darkSeen){G.darkSeen=1;banner('⚡ 정전! 불이 모두 꺼졌어요','비상등만 켜진 실험실 · 코닉 앞쪽만 보여요','#ff4b5c',2.6)}
@@ -650,8 +666,12 @@ function drawKonik(c,key,f,x,yb,s,rot,alpha){const im=IMG['konik_'+key];if(!im)r
 function drawRider(c,seat,arm,s){const im=IMG.cit_ride;if(!im||!seat)return;const rw=KM.rw,rh=KM.rh;
   c.drawImage(im,arm*rw,0,rw,rh,seat[0]-KM.seat[0]*s,seat[1]-KM.seat[1]*s,rw*s,rh*s)}
 function drawPlayerT(){if(G.state!=='ending'&&G.state!=='done'){drawPlayer();return}const e=G.et;
-  if(e<2.2){drawPlayer();return}if(e>3.5)return;const k=clamp((e-2.2)/1.2,0,1),tx=tmX()-6,x=PX+(tx-PX)*k,s=1-.45*k;
-  cx.save();cx.globalAlpha=1-clamp((k-.75)/.25,0,1);cx.translate(x,GY);cx.scale(s,s);cx.translate(-PX,-GY);drawPlayer();cx.restore()}
+  if(e<2.2){drawPlayer();return}if(e>3.75)return;   // 문이 닫히면 안에 탄 채로 보이지 않음
+  const sx=tmX(),k=clamp((e-2.2)/1.2,0,1),ease=k*k*(3-2*k);
+  const tx=sx+TM_IN.x,ty=GY+6-TM_IN.fy*(ease),x=PX+(tx-PX)*ease,s=1-.4*ease,yb=GY+(ty-GY)*ease;
+  cx.save();
+  if(k>.82){cx.beginPath();cx.ellipse(sx+TM_IN.x,GY+6-TM_IN.cy,TM_IN.rx,TM_IN.ry,0,0,7);cx.clip()}
+  cx.translate(x,yb);cx.scale(s,s);cx.translate(-PX,-GY);drawPlayer();cx.restore()}
 function drawPlayer(){
   const p=G.p,f=konikFrame();
   if(G.state==='dead'){drawKonik(cx,skin,5,PX,GY,KS,.35,Math.max(0,1-G.deadT*.7));
@@ -840,7 +860,7 @@ function fmt(t){const m=Math.floor(t/60),s=t-m*60;return m+':'+(s<10?'0':'')+s.t
 function render(){
   cx.setTransform(DPR,0,0,DPR,0,0);
   if(G.shake>0)cx.translate((Math.random()-.5)*14*G.shake,(Math.random()-.5)*14*G.shake);
-  drawBG();drawGhosts(false);if(G.fever>0)drawParty();drawGround();drawObjs();if(!(G.hordeFade>=1))drawHorde();const ending=G.state==='ending'||G.state==='done';if(ending){drawDark();drawMachine();drawPlayerT()}else{if(G.state!=='idle')drawPlayerT();drawDark();if(G.dist>G.finishX-2*W)drawMachine()}drawPops();drawFire();drawBombs();drawStones();drawHeli();drawGhosts(true);drawFx();if(ending&&G.et>5.6){cx.save();cx.globalAlpha=clamp((G.et-5.6)/.8,0,1);cx.fillStyle='#fff';cx.fillRect(0,0,W,H);cx.restore()}
+  drawBG();drawGhosts(false);if(G.fever>0)drawParty();drawGround();drawObjs();if(!(G.hordeFade>=1))drawHorde();const ending=G.state==='ending'||G.state==='done';if(ending){drawDark();drawMachine();drawPlayerT()}else{if(G.state!=='idle')drawPlayerT();drawDark();if(G.dist>G.finishX-2*W)drawMachine()}drawPops();drawFire();drawBombs();drawStones();drawHeli();drawGhosts(true);drawFx();if(ending)drawSeason2()
   cx.setTransform(DPR,0,0,DPR,0,0);if(G.state!=='idle'&&G.state!=='ending'&&G.state!=='done')drawHUD();
 }
 
